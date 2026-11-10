@@ -237,24 +237,25 @@ function Inquire() {
   const show = (k: keyof typeof errors) => (tried ? errors[k] : "");
   const send = async () => {
     setState("sending");
-    try {
-      const code = visitCode();
-      const body = new URLSearchParams({ "form-name": "inquiry", ...f, came_from: code || "direct" });
-      const r = await fetch("/", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: body.toString() });
-      if (!f.company_website) {
-        // also lands in the admin as an inbound lead
-        void fetch(VISIT_URL, {
+    const code = visitCode();
+    const body = new URLSearchParams({ "form-name": "inquiry", ...f, came_from: code || "direct" });
+    // Two copies: Netlify Forms (emails Meredith) and the admin (inbound lead). Either one landing counts.
+    const toNetlify = fetch("/", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: body.toString() })
+      .then((r) => r.ok)
+      .catch(() => false);
+    const toAdmin = f.company_website
+      ? Promise.resolve(false)
+      : fetch(VISIT_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ kind: "inquiry", page: "inquiry", code, name: f.name, email: f.email, property: f.property, location: f.location, role: f.role, timing: f.timing, message: f.message.slice(0, 2000) }),
           keepalive: true,
-        }).catch(() => undefined);
-      }
-      setState(r.ok ? "sent" : "error");
-      if (r.ok) trackEvent("inquiry");
-    } catch {
-      setState("error");
-    }
+        })
+          .then((r) => r.ok)
+          .catch(() => false);
+    const [a, b] = await Promise.all([toNetlify, toAdmin]);
+    setState(a || b ? "sent" : "error");
+    if (a || b) trackEvent("inquiry");
   };
   const field = (k: keyof Form, label: string, opts: { type?: string; req?: boolean; ph?: string; auto?: string } = {}) => {
     const err = k in errors ? show(k as keyof typeof errors) : "";
