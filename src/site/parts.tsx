@@ -62,9 +62,10 @@ export function InstagramIcon({ className }: { className?: string }) {
 }
 
 const NAV = [
+  { to: "/#about", label: "About" },
+  { to: "/#reach", label: "Reach" },
   { to: "/#partnerships", label: "Partnerships" },
   { to: "/#couples", label: "Couples content" },
-  { to: "/#reach", label: "Reach" },
   { to: "/#package", label: "The package" },
 ];
 
