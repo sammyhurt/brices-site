@@ -3,7 +3,9 @@ import { ArrowDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { heroChapters } from "./data";
-import { A } from "./parts";
+import { cn } from "@/lib/utils";
+
+import { A, glassDark } from "./parts";
 
 /** Wide video for landscape screens, tall for phones. Chosen once on load. */
 function pickVideo() {
@@ -41,7 +43,7 @@ function Chapter({ p, from, to, value, label, place }: { p: number } & (typeof h
   const y = (p - (from + to) / 2) * -80;
   return (
     <div className="absolute inset-x-0 bottom-[16vh] px-5 text-white sm:px-8 lg:px-12" style={{ opacity: o, transform: `translateY(${y}px)`, visibility: o === 0 ? "hidden" : "visible" }} aria-hidden={o === 0}>
-      <p className="font-label text-[11px] tracking-[0.28em] uppercase opacity-80">{place}</p>
+      <p className={cn(glassDark, "font-label inline-block rounded-full px-3.5 py-1.5 text-[11px] tracking-[0.24em] uppercase")}>{place}</p>
       <p className="mt-2 text-[clamp(4rem,13vw,9rem)] leading-none tracking-[-0.01em] tabular-nums">{value}</p>
       <p className="font-label mt-2 text-sm tracking-[0.12em] uppercase opacity-90 sm:text-base">{label}</p>
     </div>

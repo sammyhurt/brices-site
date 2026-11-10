@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 import { brand, couples, ideas, partnerships, pkg, quietLuxury, reach, reachAsOf, socials, type Clip, type Partnership } from "./data";
 import { Hero } from "./hero";
-import { A, Display, Eyebrow, InstagramIcon, Reveal, Section, TikTokIcon, media } from "./parts";
+import { A, Display, Eyebrow, InstagramIcon, Reveal, Section, TikTokIcon, glassDark, media } from "./parts";
 import { VISIT_URL, trackEvent, visitCode } from "./track";
 
 const btn = "font-label inline-flex h-12 items-center gap-2 rounded-full px-7 text-[11px] tracking-[0.24em] uppercase transition-colors";
@@ -108,7 +108,7 @@ function PhoneTile({ c }: { c: Clip }) {
       <img src={media(c.img)} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]" />
       <span className="absolute top-2 left-1/2 h-4 w-14 -translate-x-1/2 rounded-full bg-black" />
       {c.href ? (
-        <span className="absolute right-3 bottom-3 grid size-8 place-items-center rounded-full bg-white/90 text-black">
+        <span className={cn(glassDark, "absolute right-3 bottom-3 grid size-8 place-items-center rounded-full")}>
           <TikTokIcon className="size-3.5" />
         </span>
       ) : null}
@@ -463,7 +463,7 @@ function Lightbox({ photos, at, onClose, onMove, label }: { photos: string[]; at
       document.body.style.overflow = prev;
     };
   }, [onClose, onMove]);
-  const nav = "grid size-12 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20";
+  const nav = cn(glassDark, "grid size-12 place-items-center rounded-full hover:bg-white/20");
   return (
     <motion.div role="dialog" aria-modal="true" aria-label={`${label} photos`} className="fixed inset-0 z-50 grid place-items-center bg-black/92" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
       <img src={media(photos[at])} alt={`${label}, photo ${at + 1} of ${photos.length}`} className="max-h-[86dvh] max-w-[92vw] object-contain" onClick={(e) => e.stopPropagation()} />
@@ -495,7 +495,7 @@ export function PartnershipPage({ slug }: { slug: string }) {
         <img src={media(p.cover)} alt={`${p.name}, ${p.place}`} className="absolute inset-0 h-full w-full object-cover opacity-85" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/30" />
         <div className="absolute inset-x-0 bottom-0 px-5 pb-12 text-white sm:px-8 lg:px-12">
-          <A to="/#partnerships" className="font-label mb-8 inline-flex items-center gap-2 text-[11px] tracking-[0.24em] uppercase opacity-80 hover:opacity-100">
+          <A to="/#partnerships" className={cn(glassDark, "font-label mb-8 inline-flex items-center gap-2 rounded-full px-4 py-2 text-[11px] tracking-[0.24em] uppercase hover:bg-white/20")}>
             <ArrowLeft className="size-4" strokeWidth={1.5} /> All partnerships
           </A>
           <p className="font-label text-[11px] tracking-[0.28em] uppercase opacity-85">

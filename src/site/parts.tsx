@@ -69,48 +69,72 @@ const NAV = [
   { to: "/#package", label: "The package" },
 ];
 
-/** Transparent over the hero, linen once you scroll. */
+/** Frosted-glass pills: clear over the video, light glass over the linen sections. */
+export const glassDark = "border border-white/25 bg-white/10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_10px_30px_-12px_rgba(0,0,0,0.45)] backdrop-blur-xl backdrop-saturate-150";
+export const glassLight = "border border-white/70 bg-[#fbf8f4]/55 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_12px_32px_-16px_rgba(31,28,25,0.4)] backdrop-blur-xl backdrop-saturate-150";
+
 export function Header({ overHero }: { overHero: boolean }) {
   const [solid, setSolid] = useState(!overHero);
+  const [active, setActive] = useState("");
+  const [open, setOpen] = useState(false);
   useEffect(() => {
-    if (!overHero) return setSolid(true);
     const on = () => {
       const hero = document.getElementById("top");
-      setSolid(scrollY > (hero ? hero.offsetHeight - 80 : innerHeight * 0.6));
+      setSolid(!overHero || scrollY > (hero ? hero.offsetHeight - 80 : innerHeight * 0.6));
+      let cur = "";
+      for (const n of NAV) {
+        const el = document.getElementById(n.to.split("#")[1]);
+        if (el && el.getBoundingClientRect().top < innerHeight * 0.4) cur = n.to;
+      }
+      setActive(cur);
     };
     on();
     addEventListener("scroll", on, { passive: true });
     return () => removeEventListener("scroll", on);
   }, [overHero]);
+  const glass = solid ? glassLight : glassDark;
   return (
-    <header
-      className={cn(
-        "fixed inset-x-0 top-0 z-40 transition-colors duration-500",
-        solid ? "bg-background/90 text-foreground border-border/70 border-b backdrop-blur" : "bg-transparent text-white",
-      )}
-    >
-      <div className="flex items-center justify-between gap-4 px-5 py-4 sm:px-8 lg:px-12">
-        <A to="/" className="text-[14px] tracking-[0.14em] whitespace-nowrap uppercase sm:text-[15px] sm:tracking-[0.2em]" aria-label={`${brand.name}, home`}>
+    <header className="fixed inset-x-0 top-0 z-40">
+      <div className="flex items-center justify-between gap-3 px-4 pt-4 sm:px-8 lg:px-12">
+        <A to="/" className={cn(glass, "rounded-full px-5 py-2.5 text-[13px] tracking-[0.14em] whitespace-nowrap uppercase transition-colors duration-500 sm:text-[14px] sm:tracking-[0.18em]")} aria-label={`${brand.name}, home`}>
           Meredith &amp; Bernie
         </A>
-        <nav aria-label="Primary" className="font-label hidden items-center gap-8 text-[11px] tracking-[0.22em] uppercase lg:flex">
+        <nav aria-label="Primary" className={cn(glass, "font-label hidden items-center gap-1 rounded-full p-1 text-[11px] tracking-[0.2em] uppercase transition-colors duration-500 lg:flex")}>
           {NAV.map((n) => (
-            <A key={n.to} to={n.to} className="opacity-75 transition-opacity hover:opacity-100">
+            <A
+              key={n.to}
+              to={n.to}
+              className={cn(
+                "rounded-full px-4 py-2 transition-colors",
+                active === n.to ? (solid ? "bg-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_2px_8px_-2px_rgba(31,28,25,0.25)]" : "bg-white/25") : "opacity-80 hover:opacity-100",
+              )}
+            >
               {n.label}
             </A>
           ))}
         </nav>
-        <A
-          to="/#inquire"
-          className={cn(
-            "font-label rounded-full border px-4 py-2 text-[11px] tracking-[0.2em] whitespace-nowrap uppercase transition-colors",
-            solid ? "border-foreground hover:bg-foreground hover:text-background" : "border-white/80 hover:bg-white hover:text-black",
-          )}
-        >
-          <span className="sm:hidden">Inquire</span>
-          <span className="hidden sm:inline">Work with us</span>
-        </A>
+        <div className="flex items-center gap-2">
+          <A to="/#inquire" className={cn("font-label rounded-full px-4 py-2.5 text-[11px] tracking-[0.2em] whitespace-nowrap uppercase transition-colors duration-500", solid ? "bg-foreground text-background hover:bg-foreground/85 shadow-[0_10px_24px_-12px_rgba(31,28,25,0.6)]" : "bg-white text-black hover:bg-white/90")}>
+            <span className="sm:hidden">Inquire</span>
+            <span className="hidden sm:inline">Work with us</span>
+          </A>
+          <button type="button" aria-label="Menu" aria-expanded={open} onClick={() => setOpen(!open)} className={cn(glass, "grid size-10 place-items-center rounded-full transition-colors duration-500 lg:hidden")}>
+            <span className="grid gap-1">
+              <span className={cn("block h-px w-4 bg-current transition-transform", open && "translate-y-[2.5px] rotate-45")} />
+              <span className={cn("block h-px w-4 bg-current transition-transform", open && "-translate-y-[2.5px] -rotate-45")} />
+            </span>
+          </button>
+        </div>
       </div>
+      {open ? (
+        <nav aria-label="Menu" className={cn(glassLight, "font-label mx-4 mt-2 grid rounded-3xl p-2 text-[12px] tracking-[0.2em] uppercase sm:mx-8 lg:hidden")}>
+          {NAV.map((n) => (
+            <A key={n.to} to={n.to} className={cn("rounded-2xl px-4 py-3", active === n.to && "bg-white/80")}>
+              <span onClick={() => setOpen(false)}>{n.label}</span>
+            </A>
+          ))}
+        </nav>
+      ) : null}
     </header>
   );
 }
