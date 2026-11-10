@@ -46,8 +46,8 @@ export const partnerships: Partnership[] = [
     photos: ["willow-1", "willow-2", "willow-3", "willow-4", "willow-5", "willow-6", "willow-7"],
     clips: [
       { img: "willow-v-vlog", title: "Willow Tree vlog", href: "https://www.tiktok.com/@meredithbrice_/video/7636012001465994526" },
-      { img: "willow-v-ugc", title: "UGC: couples content", href: "https://www.tiktok.com/@meredithbrice_/video/7634345998524960031" },
-      { img: "willow-v-view", title: "Willow Tree House view", href: "https://www.tiktok.com/@meredithbrice_/video/7636003148787633439" },
+      { img: "willow-v-ugc", title: "UGC: couples content", href: "https://www.tiktok.com/@meredithbrice_/video/7636003148787633439" },
+      { img: "willow-v-view", title: "Willow Tree House view", href: "https://www.tiktok.com/@meredithbrice_/video/7634345998524960031" },
     ],
     gallery: "https://meredithmorris.pixieset.com/willowtreehouse/",
   },
