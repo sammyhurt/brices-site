@@ -66,8 +66,8 @@ export const partnerships: Partnership[] = [
     summary: "An Airbnb collab at Casa Bianca on the Sicilian coast: the house, the sea, sunsets from the bedroom and POV content.",
     photos: ["casa-1", "casa-2", "casa-3", "casa-4", "casa-5", "casa-6", "casa-7"],
     clips: [
-      { img: "casa-v-collab", title: "Casa Bianca Airbnb collab", href: "https://www.tiktok.com/@meredithbrice_/video/7548389240191683853" },
-      { img: "casa-v-sunset", title: "Sunset from the bedroom", href: "https://www.tiktok.com/@meredithbrice_/video/7548729056909479181" },
+      { img: "casa-v-collab", title: "Casa Bianca Airbnb collab", href: "https://www.tiktok.com/@meredithbrice_/video/7548729056909479181" },
+      { img: "casa-v-sunset", title: "Sunset from the bedroom", href: "https://www.tiktok.com/@meredithbrice_/video/7548389240191683853" },
       { img: "casa-v-pov", title: "POV content of the collab", href: "https://www.tiktok.com/@meredithbrice_/video/7551144669531442446" },
     ],
     gallery: "https://meredithmorris.pixieset.com/casabianca/",
