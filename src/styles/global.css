@@ -1,4 +1,7 @@
-@import '@fontsource-variable/jost';
+@import '@fontsource-variable/playfair-display';
+@import '@fontsource/pinyon-script';
+@import '@fontsource/arimo/400.css';
+@import '@fontsource/arimo/700.css';
 @import "tailwindcss";
 @import "tw-animate-css";
 @custom-variant dark (&:is(.dark *));
@@ -49,9 +52,11 @@
   --sidebar-border: #d8cdbf;
   --sidebar-ring: #8a6a4a;
   --radius: 0.5rem;
-  --font-sans: 'Jost Variable', 'Jost', ui-sans-serif, system-ui, sans-serif;
-  --font-serif: 'Jost Variable', 'Jost', ui-sans-serif, system-ui, sans-serif;
-  --font-mono: 'Jost Variable', 'Jost', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Playfair Display Variable', 'Playfair Display', Georgia, serif;
+  --font-serif: 'Playfair Display Variable', 'Playfair Display', Georgia, serif;
+  --font-mono: 'Arimo', Arial, ui-sans-serif, system-ui, sans-serif;
+  --font-script: 'Pinyon Script', 'Playfair Display', cursive;
+  --font-label: 'Arimo', Arial, ui-sans-serif, system-ui, sans-serif;
   --shadow-sm: 0 1px 2px 0 rgb(31 28 25 / 0.06);
   --shadow-md: 0 6px 16px 0 rgb(31 28 25 / 0.1);
   --shadow-lg: 0 18px 44px -14px rgb(31 28 25 / 0.3);
@@ -100,6 +105,8 @@
   --font-sans: var(--font-sans);
   --font-serif: var(--font-serif);
   --font-mono: var(--font-mono);
+  --font-script: var(--font-script);
+  --font-label: var(--font-label);
   --shadow-sm: var(--shadow-sm);
   --shadow-md: var(--shadow-md);
   --shadow-lg: var(--shadow-lg);

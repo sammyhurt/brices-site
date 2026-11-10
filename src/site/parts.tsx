@@ -89,10 +89,10 @@ export function Header({ overHero }: { overHero: boolean }) {
       )}
     >
       <div className="flex items-center justify-between gap-4 px-5 py-4 sm:px-8 lg:px-12">
-        <A to="/" className="text-[12px] font-medium tracking-[0.2em] whitespace-nowrap uppercase sm:text-[13px] sm:tracking-[0.32em]" aria-label={`${brand.name}, home`}>
-          Meredith <span className="font-light">&amp;</span> Bernie
+        <A to="/" className="text-[14px] tracking-[0.14em] whitespace-nowrap uppercase sm:text-[15px] sm:tracking-[0.2em]" aria-label={`${brand.name}, home`}>
+          Meredith &amp; Bernie
         </A>
-        <nav aria-label="Primary" className="hidden items-center gap-8 text-[11px] tracking-[0.22em] uppercase lg:flex">
+        <nav aria-label="Primary" className="font-label hidden items-center gap-8 text-[11px] tracking-[0.22em] uppercase lg:flex">
           {NAV.map((n) => (
             <A key={n.to} to={n.to} className="opacity-75 transition-opacity hover:opacity-100">
               {n.label}
@@ -102,7 +102,7 @@ export function Header({ overHero }: { overHero: boolean }) {
         <A
           to="/#inquire"
           className={cn(
-            "rounded-full border px-4 py-2 text-[11px] tracking-[0.2em] whitespace-nowrap uppercase transition-colors",
+            "font-label rounded-full border px-4 py-2 text-[11px] tracking-[0.2em] whitespace-nowrap uppercase transition-colors",
             solid ? "border-foreground hover:bg-foreground hover:text-background" : "border-white/80 hover:bg-white hover:text-black",
           )}
         >
@@ -119,11 +119,11 @@ export function Footer() {
     <footer className="bg-foreground text-background/80">
       <div className="grid gap-10 px-5 py-14 sm:px-8 md:grid-cols-3 lg:px-12">
         <div>
-          <p className="text-background text-[13px] tracking-[0.32em] uppercase">Meredith &amp; Bernie</p>
+          <p className="text-background text-[15px] tracking-[0.2em] uppercase">Meredith &amp; Bernie</p>
           <p className="mt-3 max-w-xs text-sm leading-relaxed">Luxury travel, fashion and couples content from NYC. Styled, shot and edited by us.</p>
         </div>
         <div className="grid gap-2 text-sm">
-          <p className="text-background/50 text-[11px] tracking-[0.22em] uppercase">Follow</p>
+          <p className="font-label text-background/50 text-[11px] tracking-[0.22em] uppercase">Follow</p>
           {socials.map((s) => (
             <a key={s.label + s.handle} href={s.href} target="_blank" rel="noreferrer" className="hover:text-background inline-flex items-center gap-2">
               {s.label === "TikTok" ? <TikTokIcon /> : <InstagramIcon />} {s.handle}
@@ -131,7 +131,7 @@ export function Footer() {
           ))}
         </div>
         <div className="grid content-start gap-2 text-sm">
-          <p className="text-background/50 text-[11px] tracking-[0.22em] uppercase">Partnerships</p>
+          <p className="font-label text-background/50 text-[11px] tracking-[0.22em] uppercase">Partnerships</p>
           <a href={`mailto:${brand.email}`} className="hover:text-background break-all">
             {brand.email}
           </a>
@@ -156,20 +156,15 @@ export function Reveal({ children, delay = 0, className = "" }: { children: Reac
 }
 
 export function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
-  return <p className={cn("text-ink text-[11px] tracking-[0.28em] uppercase", className)}>{children}</p>;
+  return <p className={cn("font-label text-ink text-[11px] tracking-[0.28em] uppercase", className)}>{children}</p>;
 }
 
-/** The kit's headline style: light, uppercase, wide tracking, first letter oversized. */
+/** The media kit's headline: a Pinyon Script first letter, then Playfair Display capitals. */
 export function Display({ children, as: Tag = "h2", className }: { children: string; as?: "h1" | "h2" | "h3"; className?: string }) {
   return (
-    <Tag className={cn("display text-[clamp(2rem,5.4vw,4.4rem)] leading-[1.02] font-light tracking-[0.06em] text-balance uppercase", className)}>
-      {children.split(" ").map((w, i) => (
-        <span key={i} className="inline-block whitespace-nowrap">
-          <span className="text-[1.28em] leading-none">{w[0]}</span>
-          {w.slice(1)}
-          {" "}
-        </span>
-      ))}
+    <Tag className={cn("text-[clamp(2.1rem,5vw,4rem)] leading-[1.15] font-normal tracking-[0.02em] text-balance uppercase", className)}>
+      <span className="font-script relative inline-block pr-[0.24em] align-[-0.2em] text-[2.15em] leading-[0] tracking-normal normal-case">{children.charAt(0)}</span>
+      <span>{children.slice(1)}</span>
     </Tag>
   );
 }

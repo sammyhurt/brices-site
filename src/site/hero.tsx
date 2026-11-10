@@ -23,11 +23,13 @@ function Title({ p = 0 }: { p?: number }) {
   const o = Math.max(0, 1 - p / 0.17);
   return (
     <div className="absolute inset-x-0 top-[22vh] px-5 text-center text-white sm:px-8" style={{ opacity: o, visibility: o === 0 ? "hidden" : "visible" }}>
-      <p className="text-[11px] tracking-[0.34em] uppercase opacity-85">Hotel partnerships</p>
-      <h1 className="display mt-5 text-[clamp(2.6rem,9vw,7.5rem)] leading-[0.95] font-light tracking-[0.08em] uppercase">
-        <span className="text-[1.25em]">M</span>eredith <span className="font-extralight">&amp;</span> <span className="text-[1.25em]">B</span>ernie
+      <p className="font-label text-[11px] tracking-[0.34em] uppercase opacity-85">Hotel partnerships</p>
+      <h1 className="mx-auto mt-6 w-fit text-left text-[clamp(2.4rem,7.4vw,6.2rem)] leading-[1.02] tracking-[0.02em] uppercase">
+        <span className="font-script inline-block align-[-0.22em] text-[2.3em] leading-[0] tracking-normal normal-case">M</span>
+        <span className="-ml-[0.04em]">eredith</span>
+        <span className="block pl-[1.1em] sm:pl-[1.6em]">&amp; Bernie</span>
       </h1>
-      <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed font-light opacity-90 sm:text-lg">Luxury travel, fashion and couples content. Every shoot is styled, shot and edited by us.</p>
+      <p className="mx-auto mt-8 max-w-xl text-base leading-relaxed opacity-90 sm:text-lg">Luxury travel, fashion and couples content. Every shoot is styled, shot and edited by us.</p>
     </div>
   );
 }
@@ -37,9 +39,9 @@ function Chapter({ p, from, to, value, label, place }: { p: number } & (typeof h
   const y = (p - (from + to) / 2) * -80;
   return (
     <div className="absolute inset-x-0 bottom-[16vh] px-5 text-white sm:px-8 lg:px-12" style={{ opacity: o, transform: `translateY(${y}px)`, visibility: o === 0 ? "hidden" : "visible" }} aria-hidden={o === 0}>
-      <p className="text-[11px] tracking-[0.28em] uppercase opacity-80">{place}</p>
-      <p className="mt-2 text-[clamp(4rem,14vw,10rem)] leading-none font-extralight tracking-[-0.02em] tabular-nums">{value}</p>
-      <p className="mt-2 text-sm tracking-[0.12em] uppercase opacity-90 sm:text-base">{label}</p>
+      <p className="font-label text-[11px] tracking-[0.28em] uppercase opacity-80">{place}</p>
+      <p className="mt-2 text-[clamp(4rem,13vw,9rem)] leading-none tracking-[-0.01em] tabular-nums">{value}</p>
+      <p className="font-label mt-2 text-sm tracking-[0.12em] uppercase opacity-90 sm:text-base">{label}</p>
     </div>
   );
 }
@@ -124,7 +126,7 @@ function ScrubHero() {
         {heroChapters.map((c) => (
           <Chapter key={c.value} p={p} {...c} />
         ))}
-        <motion.div animate={{ opacity: hint ? 1 : 0 }} transition={{ duration: 0.5 }} className="absolute inset-x-0 bottom-8 mx-auto flex w-fit flex-col items-center gap-2 text-[11px] tracking-[0.28em] text-white/85 uppercase" style={{ pointerEvents: "none" }}>
+        <motion.div animate={{ opacity: hint ? 1 : 0 }} transition={{ duration: 0.5 }} className="font-label absolute inset-x-0 bottom-8 mx-auto flex w-fit flex-col items-center gap-2 text-[11px] tracking-[0.28em] text-white/85 uppercase" style={{ pointerEvents: "none" }}>
           Scroll
           <ArrowDown className="size-4 animate-bounce" strokeWidth={1.5} />
         </motion.div>
@@ -145,7 +147,7 @@ function StaticHero() {
         {heroChapters.map((c) => (
           <div key={c.value}>
             <p className="text-6xl leading-none font-extralight">{c.value}</p>
-            <p className="mt-2 text-sm tracking-[0.12em] uppercase">{c.label}</p>
+            <p className="font-label mt-2 text-sm tracking-[0.12em] uppercase">{c.label}</p>
           </div>
         ))}
       </div>

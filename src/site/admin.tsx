@@ -696,7 +696,7 @@ export default function Admin() {
 
   if (!pass || (!data && err === "That passcode didn't work.")) {
     return (
-      <main className="grid min-h-[80dvh] place-items-center px-5 pt-24">
+      <main className="font-label grid min-h-[80dvh] place-items-center px-5 pt-24">
         <form
           className={cn(card, "grid w-full max-w-sm gap-4")}
           onSubmit={(e) => {
@@ -712,7 +712,7 @@ export default function Admin() {
           }}
         >
           <Lock className="size-6" strokeWidth={1.5} />
-          <h1 className="text-2xl font-light tracking-[0.06em] uppercase">Your admin</h1>
+          <h1 className="font-serif text-2xl tracking-[0.04em] uppercase">Your admin</h1>
           <p className="text-muted-foreground text-sm">Use the same passcode as your Meredith Studio.</p>
           <Input type="password" value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="Passcode" autoFocus />
           {err ? <p className="text-destructive text-sm">{err}</p> : null}
@@ -727,11 +727,11 @@ export default function Admin() {
 
   const st = data?.settings || {};
   return (
-    <main className="mx-auto w-full max-w-6xl px-5 pt-24 pb-16 sm:px-8">
+    <main className="font-label mx-auto w-full max-w-6xl px-5 pt-24 pb-16 sm:px-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className={label}>Meredith &amp; Bernie</p>
-          <h1 className="mt-1 text-3xl font-light tracking-[0.06em] uppercase">Partnerships admin</h1>
+          <h1 className="mt-1 font-serif text-3xl tracking-[0.04em] uppercase">Partnerships admin</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Chip tone={st.sending_on === "true" ? "ok" : "muted"}>{st.sending_on === "true" ? `Sending on · ${data?.sent_today ?? 0}/${st.daily_cap || 15} today` : "Sending off"}</Chip>

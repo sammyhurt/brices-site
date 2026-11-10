@@ -11,7 +11,7 @@ import { Hero } from "./hero";
 import { A, Display, Eyebrow, Reveal, Section, TikTokIcon, media } from "./parts";
 import { VISIT_URL, trackEvent, visitCode } from "./track";
 
-const btn = "inline-flex h-12 items-center gap-2 rounded-full px-7 text-[11px] tracking-[0.24em] uppercase transition-colors";
+const btn = "font-label inline-flex h-12 items-center gap-2 rounded-full px-7 text-[11px] tracking-[0.24em] uppercase transition-colors";
 
 /* ───────── About ───────── */
 function About() {
@@ -89,7 +89,7 @@ function Partnerships() {
                 </div>
                 <div className="mt-5 flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-ink text-[11px] tracking-[0.24em] uppercase">
+                    <p className="font-label text-ink text-[11px] tracking-[0.24em] uppercase">
                       {p.kind} · {p.place}
                     </p>
                     <h3 className="mt-2 text-2xl font-light tracking-[0.06em] uppercase">{p.name}</h3>
@@ -117,7 +117,7 @@ function ClipTile({ c, className }: { c: Clip; className?: string }) {
         </span>
       ) : null}
       <span className="absolute inset-x-3 bottom-3 grid gap-0.5 text-[13px] leading-snug text-white">
-        {c.href ? null : <span className="text-[10px] tracking-[0.18em] text-white/75 uppercase">Still from the video</span>}
+        {c.href ? null : <span className="font-label text-[10px] tracking-[0.18em] text-white/75 uppercase">Still from the video</span>}
         {c.title}
       </span>
     </>
@@ -137,7 +137,7 @@ function Couples() {
     <section id="couples" className="bg-foreground text-background scroll-mt-16 px-5 py-20 sm:px-8 lg:px-12 lg:py-32">
       <Reveal className="mb-14 flex flex-wrap items-end justify-between gap-6">
         <div>
-          <p className="text-background/60 text-[11px] tracking-[0.28em] uppercase">On our channels</p>
+          <p className="font-label text-background/60 text-[11px] tracking-[0.28em] uppercase">On our channels</p>
           <Display className="mt-4">Couples content</Display>
         </div>
         <p className="text-background/70 max-w-sm font-light">Travel, fashion and the two of us. Tap any video to watch it on TikTok.</p>
@@ -265,7 +265,7 @@ function Inquire() {
   const field = (k: keyof Form, label: string, opts: { type?: string; req?: boolean; ph?: string; auto?: string } = {}) => {
     const err = k in errors ? show(k as keyof typeof errors) : "";
     return (
-      <label className="grid gap-2 text-[11px] tracking-[0.2em] uppercase">
+      <label className="font-label grid gap-2 text-[11px] tracking-[0.2em] uppercase">
         <span>
           {label}
           {opts.req ? <span className="text-ink"> *</span> : null}
@@ -332,7 +332,7 @@ function Inquire() {
               {field("location", "City and state")}
               {field("role", "Your role", { ph: "Marketing, owner, GM…", auto: "organization-title" })}
               {field("timing", "Dates or season", { ph: "Flexible is fine" })}
-              <label className="grid gap-2 text-[11px] tracking-[0.2em] uppercase sm:col-span-2">
+              <label className="font-label grid gap-2 text-[11px] tracking-[0.2em] uppercase sm:col-span-2">
                 <span>What you have in mind</span>
                 <Textarea
                   name="message"
@@ -399,7 +399,7 @@ function Lightbox({ photos, at, onClose, onMove, label }: { photos: string[]; at
   return (
     <motion.div role="dialog" aria-modal="true" aria-label={`${label} photos`} className="fixed inset-0 z-50 grid place-items-center bg-black/92" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
       <img src={media(photos[at])} alt={`${label}, photo ${at + 1} of ${photos.length}`} className="max-h-[86dvh] max-w-[92vw] object-contain" onClick={(e) => e.stopPropagation()} />
-      <p className="absolute top-5 left-5 text-[11px] tracking-[0.24em] text-white/70 uppercase tabular-nums">
+      <p className="font-label absolute top-5 left-5 text-[11px] tracking-[0.24em] text-white/70 uppercase tabular-nums">
         {at + 1} / {photos.length}
       </p>
       <button type="button" aria-label="Close" className={cn(nav, "absolute top-4 right-4")} onClick={onClose}>
@@ -427,10 +427,10 @@ export function PartnershipPage({ slug }: { slug: string }) {
         <img src={media(p.cover)} alt={`${p.name}, ${p.place}`} className="absolute inset-0 h-full w-full object-cover opacity-85" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/30" />
         <div className="absolute inset-x-0 bottom-0 px-5 pb-12 text-white sm:px-8 lg:px-12">
-          <A to="/#partnerships" className="mb-8 inline-flex items-center gap-2 text-[11px] tracking-[0.24em] uppercase opacity-80 hover:opacity-100">
+          <A to="/#partnerships" className="font-label mb-8 inline-flex items-center gap-2 text-[11px] tracking-[0.24em] uppercase opacity-80 hover:opacity-100">
             <ArrowLeft className="size-4" strokeWidth={1.5} /> All partnerships
           </A>
-          <p className="text-[11px] tracking-[0.28em] uppercase opacity-85">
+          <p className="font-label text-[11px] tracking-[0.28em] uppercase opacity-85">
             {p.kind} · {p.place}
           </p>
           <Display as="h1" className="mt-3">
@@ -469,7 +469,7 @@ export function PartnershipPage({ slug }: { slug: string }) {
       <A to={`/partnerships/${next.slug}`} className="bg-foreground text-background group relative block overflow-hidden">
         <img src={media(next.cover)} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-35 transition-opacity group-hover:opacity-50" />
         <div className="relative px-5 py-20 sm:px-8 lg:px-12">
-          <p className="text-[11px] tracking-[0.28em] uppercase opacity-75">Next partnership</p>
+          <p className="font-label text-[11px] tracking-[0.28em] uppercase opacity-75">Next partnership</p>
           <p className="mt-3 inline-flex items-center gap-4 text-[clamp(2rem,5vw,4rem)] font-light tracking-[0.06em] uppercase">
             {next.name} <ArrowRight className="size-8 transition-transform group-hover:translate-x-1" strokeWidth={1} />
           </p>
