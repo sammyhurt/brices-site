@@ -23,11 +23,13 @@ function Title({ p = 0 }: { p?: number }) {
   const o = Math.max(0, 1 - p / 0.17);
   return (
     <div className="absolute inset-x-0 top-[22vh] px-5 text-center text-white sm:px-8" style={{ opacity: o, visibility: o === 0 ? "hidden" : "visible" }}>
-      <p className="font-label text-[11px] tracking-[0.34em] uppercase opacity-85">Hotel partnerships</p>
-      <h1 className="mx-auto mt-6 w-fit text-left text-[clamp(2.4rem,7.4vw,6.2rem)] leading-[1.02] tracking-[0.02em] uppercase">
-        <span className="font-script inline-block align-[-0.22em] text-[2.3em] leading-[0] tracking-normal normal-case">M</span>
-        <span className="-ml-[0.04em]">eredith</span>
-        <span className="block pl-[1.1em] sm:pl-[1.6em]">&amp; Bernie</span>
+      <h1 className="relative mx-auto mt-10 w-fit text-[clamp(2.4rem,7.4vw,6.2rem)] leading-[1.02] tracking-[0.02em] uppercase">
+        <span className="absolute right-0 bottom-full mb-[0.15em] text-[max(11px,0.17em)] tracking-[0.04em] opacity-90">Hotel partnership with</span>
+        <span className="block whitespace-nowrap">
+          <span className="font-script inline-block pr-[0.07em] align-[-0.22em] text-[2.3em] leading-[0] tracking-normal normal-case">M</span>
+          eredith
+        </span>
+        <span className="block text-right">&amp; Bernie</span>
       </h1>
       <p className="mx-auto mt-8 max-w-xl text-base leading-relaxed opacity-90 sm:text-lg">Luxury travel, fashion and couples content. Every shoot is styled, shot and edited by us.</p>
     </div>
