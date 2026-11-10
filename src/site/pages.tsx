@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, ArrowUpRight, Check, ChevronLeft, ChevronRight, Download, Play, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, Check, ChevronLeft, ChevronRight, Download, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Input } from "@/components/ui/input";
@@ -111,10 +111,15 @@ function ClipTile({ c, className }: { c: Clip; className?: string }) {
     <>
       <img src={media(c.img)} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-black/0" />
-      <span className="absolute top-3 right-3 grid size-9 place-items-center rounded-full bg-white/85 text-black backdrop-blur">
-        {c.href ? <TikTokIcon /> : <Play className="size-4 fill-current" />}
+      {c.href ? (
+        <span className="absolute top-3 right-3 grid size-9 place-items-center rounded-full bg-white/85 text-black backdrop-blur">
+          <TikTokIcon />
+        </span>
+      ) : null}
+      <span className="absolute inset-x-3 bottom-3 grid gap-0.5 text-[13px] leading-snug text-white">
+        {c.href ? null : <span className="text-[10px] tracking-[0.18em] text-white/75 uppercase">Still from the video</span>}
+        {c.title}
       </span>
-      <span className="absolute inset-x-3 bottom-3 text-[13px] leading-snug text-white">{c.title}</span>
     </>
   );
   const cls = cn("group relative block aspect-[9/16] overflow-hidden rounded-xl bg-black/10", className);
