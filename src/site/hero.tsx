@@ -23,7 +23,7 @@ function Title({ p = 0 }: { p?: number }) {
   const o = Math.max(0, 1 - p / 0.17);
   return (
     <div className="absolute inset-x-0 top-[22vh] px-5 text-center text-white sm:px-8" style={{ opacity: o, visibility: o === 0 ? "hidden" : "visible" }}>
-      <p className="text-[11px] tracking-[0.34em] uppercase opacity-85">Hotel partnerships · Casa Bianca, Sicily</p>
+      <p className="text-[11px] tracking-[0.34em] uppercase opacity-85">Hotel partnerships</p>
       <h1 className="display mt-5 text-[clamp(2.6rem,9vw,7.5rem)] leading-[0.95] font-light tracking-[0.08em] uppercase">
         <span className="text-[1.25em]">M</span>eredith <span className="font-extralight">&amp;</span> <span className="text-[1.25em]">B</span>ernie
       </h1>
