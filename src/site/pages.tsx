@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, ArrowUpRight, Check, ChevronLeft, ChevronRight, Download, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, Check, ChevronLeft, ChevronRight, Download, Play, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Input } from "@/components/ui/input";
@@ -110,12 +110,80 @@ function Reach() {
   );
 }
 
+/* ───────── TikTok's own player in a window over the page ───────── */
+const tiktokId = (href?: string) => (href?.match(/\/video\/(\d+)/) || [])[1];
+
+function VideoPlayer({ c, onClose }: { c: Clip; onClose: () => void }) {
+  const id = tiktokId(c.href);
+  useEffect(() => {
+    const on = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    addEventListener("keydown", on);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      removeEventListener("keydown", on);
+      document.body.style.overflow = prev;
+    };
+  }, [onClose]);
+  if (!id) return null;
+  const btnGlass = cn(glassDark, "grid size-12 place-items-center rounded-full hover:bg-white/20");
+  return (
+    <motion.div role="dialog" aria-modal="true" aria-label={c.title} className="fixed inset-0 z-50 grid place-items-center bg-black/92 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
+      <div className="grid justify-items-center gap-4" onClick={(e) => e.stopPropagation()}>
+        <div className="relative aspect-[9/16] h-[min(80dvh,calc(92vw*16/9))] overflow-hidden rounded-2xl bg-black">
+          <iframe
+            src={`https://www.tiktok.com/player/v1/${id}?autoplay=1&loop=1&rel=0&description=0&music_info=0`}
+            title={c.title}
+            allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+            allowFullScreen
+            className="absolute inset-0 h-full w-full border-0"
+          />
+        </div>
+        <div className="font-label flex max-w-[92vw] flex-wrap items-center justify-center gap-x-4 gap-y-1 text-center text-xs tracking-[0.08em] text-white/80">
+          <span>{c.title}</span>
+          <a href={c.href} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-1 underline underline-offset-4 hover:text-white">
+            Open in TikTok <ArrowUpRight className="size-3.5" strokeWidth={1.5} />
+          </a>
+        </div>
+      </div>
+      <button type="button" aria-label="Close video" className={cn(btnGlass, "absolute top-4 right-4")} onClick={onClose}>
+        <X className="size-5" strokeWidth={1.5} />
+      </button>
+    </motion.div>
+  );
+}
+
+/** A clip with a TikTok link plays in the window above; ctrl/cmd-click still opens TikTok in a new tab. */
+function useClipPlayer(c: Clip) {
+  const [open, setOpen] = useState(false);
+  const playable = !!tiktokId(c.href);
+  const onClick = (e: React.MouseEvent) => {
+    if (!playable || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    e.preventDefault();
+    setOpen(true);
+  };
+  const player = <AnimatePresence>{open ? <VideoPlayer c={c} onClose={() => setOpen(false)} /> : null}</AnimatePresence>;
+  return { onClick, player, playable };
+}
+
+function PlayBadge() {
+  return (
+    <span className="absolute inset-0 grid place-items-center">
+      <span className={cn(glassDark, "grid size-14 place-items-center rounded-full transition-transform duration-500 group-hover:scale-110")}>
+        <Play className="ml-0.5 size-5 fill-current" strokeWidth={1.5} />
+      </span>
+    </span>
+  );
+}
+
 /* ───────── Phone-frame video (slides 7, 9, 12, 15) ───────── */
 function PhoneTile({ c }: { c: Clip }) {
+  const { onClick, player, playable } = useClipPlayer(c);
   const screen = (
     <span className="relative block aspect-[9/19] overflow-hidden rounded-[1.6rem] bg-black">
       <img src={media(c.img)} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]" />
       <span className="absolute top-2 left-1/2 h-4 w-14 -translate-x-1/2 rounded-full bg-black" />
+      {playable ? <PlayBadge /> : null}
       {c.href ? (
         <span className={cn(glassDark, "absolute right-3 bottom-3 grid size-8 place-items-center rounded-full")}>
           <TikTokIcon className="size-3.5" />
@@ -124,12 +192,15 @@ function PhoneTile({ c }: { c: Clip }) {
     </span>
   );
   const frame = <span className="block rounded-[2rem] bg-[#1d1b18] p-[6px] shadow-[0_18px_40px_-20px_rgb(31_28_25/0.6)]">{screen}</span>;
-  const caption = <span className="font-label text-muted-foreground mx-auto mt-4 block max-w-[13rem] text-center text-xs leading-snug">{c.title}</span>;
+  const caption = <span className="font-label text-muted-foreground mx-auto mt-4 block max-w-[15rem] text-center text-xs leading-snug">{c.title}</span>;
   return c.href ? (
-    <a href={c.href} target="_blank" rel="noreferrer" className="group block" aria-label={`${c.title} on TikTok`}>
-      {frame}
-      {caption}
-    </a>
+    <>
+      <a href={c.href} target="_blank" rel="noreferrer" onClick={onClick} className="group block" aria-label={`Play ${c.title}`}>
+        {frame}
+        {caption}
+      </a>
+      {player}
+    </>
   ) : (
     <div className="group block">
       {frame}
@@ -173,7 +244,7 @@ function PartnershipChapter({ p, i, first }: { p: Partnership; i: number; first?
         </div>
 
         <div className="mt-20 grid gap-14 lg:grid-cols-12 lg:gap-16">
-          <div className="lg:col-span-7">
+          <div className="min-w-0 lg:col-span-5">
             <Title size="text-[clamp(1.7rem,3vw,2.5rem)]">Photo</Title>
             <div className="mt-8 grid grid-cols-3 gap-2 sm:gap-3">
               {shown.map((ph, k) => (
@@ -183,11 +254,14 @@ function PartnershipChapter({ p, i, first }: { p: Partnership; i: number; first?
               ))}
             </div>
           </div>
-          <div className="lg:col-span-5">
+          <div className="min-w-0 lg:col-span-7">
             <Title size="text-[clamp(1.7rem,3vw,2.5rem)]">Video content</Title>
-            <div className="mt-8 grid grid-cols-3 gap-3 sm:gap-5">
+            {/* phones: swipe sideways, each video most of the screen wide; larger screens: three across */}
+            <div className="-mx-5 mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-5 sm:overflow-visible sm:px-0 lg:gap-6">
               {p.clips.map((c) => (
-                <PhoneTile key={c.title} c={c} />
+                <div key={c.title} className="w-[64vw] max-w-[17rem] shrink-0 snap-center sm:w-auto sm:max-w-none">
+                  <PhoneTile c={c} />
+                </div>
               ))}
             </div>
           </div>
@@ -202,10 +276,12 @@ function PartnershipChapter({ p, i, first }: { p: Partnership; i: number; first?
 
 /* ───────── Vertical video tiles (partnership pages) ───────── */
 function ClipTile({ c, className }: { c: Clip; className?: string }) {
+  const { onClick, player, playable } = useClipPlayer(c);
   const inner = (
     <>
       <img src={media(c.img)} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-black/0" />
+      {playable ? <PlayBadge /> : null}
       {c.href ? (
         <span className="absolute top-3 right-3 grid size-9 place-items-center rounded-full bg-white/85 text-black backdrop-blur">
           <TikTokIcon />
@@ -219,9 +295,12 @@ function ClipTile({ c, className }: { c: Clip; className?: string }) {
   );
   const cls = cn("group relative block aspect-[9/16] overflow-hidden rounded-xl bg-black/10", className);
   return c.href ? (
-    <a href={c.href} target="_blank" rel="noreferrer" className={cls} aria-label={`${c.title} on TikTok`}>
-      {inner}
-    </a>
+    <>
+      <a href={c.href} target="_blank" rel="noreferrer" onClick={onClick} className={cls} aria-label={`Play ${c.title}`}>
+        {inner}
+      </a>
+      {player}
+    </>
   ) : (
     <div className={cls}>{inner}</div>
   );
@@ -234,11 +313,11 @@ function Couples() {
       <div className={wrap}>
         <Reveal className="mb-12 flex flex-wrap items-end justify-between gap-6">
           <Title eyebrow="On our channels">Couples content</Title>
-          <p className="text-muted-foreground max-w-sm">Travel, fashion and the two of us. Tap any video to watch it on TikTok.</p>
+          <p className="text-muted-foreground max-w-sm">Travel, fashion and the two of us. Tap any video to watch it.</p>
         </Reveal>
         <div className="-mx-5 flex snap-x snap-mandatory gap-5 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 lg:grid-cols-6">
           {couples.map((c, i) => (
-            <Reveal key={c.title} delay={i * 0.05} className="w-[46vw] shrink-0 snap-start sm:w-auto">
+            <Reveal key={c.title} delay={i * 0.05} className="w-[64vw] max-w-[17rem] shrink-0 snap-center sm:w-auto sm:max-w-none">
               <PhoneTile c={c} />
             </Reveal>
           ))}
@@ -519,9 +598,9 @@ export function PartnershipPage({ slug }: { slug: string }) {
               </a>
             ) : null}
           </Reveal>
-          <div className="grid grid-cols-3 gap-3 lg:col-span-7">
+          <div className="-mx-5 flex min-w-0 snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 lg:col-span-7">
             {p.clips.map((c) => (
-              <ClipTile key={c.title} c={c} />
+              <ClipTile key={c.title} c={c} className="w-[64vw] max-w-[17rem] shrink-0 snap-center sm:w-auto sm:max-w-none" />
             ))}
           </div>
         </div>
