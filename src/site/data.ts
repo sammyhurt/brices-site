@@ -38,10 +38,14 @@ export const quietLuxury = [
 export interface Clip { img: string; title: string; href?: string }
 export interface Partnership {
   slug: string; name: string; place: string; kind: string; cover: string; photos: string[]; clips: Clip[]; gallery?: string; summary: string;
+  /** Top of the partnership page: which photo (default: cover) and which part of it stays in view on wide screens (CSS object-position). */
+  hero?: string; focus?: string;
+  /** Where to center the short "Next partnership" banner on the same photo. */
+  band?: string;
 }
 export const partnerships: Partnership[] = [
   {
-    slug: "willow-tree-house", name: "Willow Tree House", place: "New York", kind: "Treehouse stay", cover: "willow-cover",
+    slug: "willow-tree-house", name: "Willow Tree House", place: "New York", kind: "Treehouse stay", cover: "willow-cover", focus: "50% 22%", band: "50% 33%",
     summary: "A treehouse stay in New York, photographed and filmed by us: the property, the views and couples content.",
     photos: ["willow-1", "willow-2", "willow-3", "willow-4", "willow-5", "willow-6", "willow-7"],
     clips: [
@@ -52,17 +56,17 @@ export const partnerships: Partnership[] = [
     gallery: "https://meredithmorris.pixieset.com/willowtreehouse/",
   },
   {
-    slug: "catskills", name: "Catskills", place: "New York", kind: "Winter getaway", cover: "catskills-cover",
+    slug: "catskills", name: "Catskills", place: "New York", kind: "Winter getaway", cover: "catskills-cover", hero: "catskills-6", focus: "50% 70%", band: "50% 66%",
     summary: "A Catskills winter getaway: the sauna, the cabin interiors and couples content inside the property.",
     photos: ["catskills-1", "catskills-2", "catskills-3", "catskills-4", "catskills-5", "catskills-6"],
     clips: [
-      { img: "catskills-v-sauna", title: "Sauna escape", href: "https://www.tiktok.com/@llilbill/video/7607234270289038623" },
-      { img: "catskills-v-getaway", title: "Catskills winter getaway", href: "https://www.tiktok.com/@meredithbrice_/video/7608017044650347789" },
-      { img: "catskills-v-inside", title: "Couple content inside the hotel" },
+      { img: "catskills-v-sauna", title: "Sauna escape", href: "https://www.tiktok.com/@meredithbrice_/video/7608017044650347789" },
+      { img: "catskills-v-getaway", title: "Catskills winter getaway" },
+      { img: "catskills-v-inside", title: "Couple content inside the hotel", href: "https://www.tiktok.com/@llilbill/video/7607234270289038623" },
     ],
   },
   {
-    slug: "casa-bianca", name: "Casa Bianca", place: "Sicily, Italy", kind: "Airbnb collab", cover: "casa-cover",
+    slug: "casa-bianca", name: "Casa Bianca", place: "Sicily, Italy", kind: "Airbnb collab", cover: "casa-cover", focus: "50% 43%", band: "50% 42%",
     summary: "An Airbnb collab at Casa Bianca on the Sicilian coast: the house, the sea, sunsets from the bedroom and POV content.",
     photos: ["casa-1", "casa-2", "casa-3", "casa-4", "casa-5", "casa-6", "casa-7"],
     clips: [
@@ -99,7 +103,7 @@ export const pkg = [
 
 /** Hero chapters shown over the scroll video. */
 export const heroChapters = [
-  { from: 0.25, to: 0.44, value: "14.1K", label: "combined followers", place: "Willow Tree House · New York" },
-  { from: 0.51, to: 0.67, value: "1.8M+", label: "views across Instagram and TikTok", place: "Catskills · New York" },
+  { from: 0.25, to: 0.44, value: "14.1K", label: "combined followers", place: "Casa Bianca · Sicily, Italy" },
+  { from: 0.51, to: 0.67, value: "1.8M+", label: "views across Instagram and TikTok", place: "" },
   { from: 0.75, to: 0.95, value: "6.3%", label: "average engagement rate", place: "Styled, shot and edited by us" },
 ];

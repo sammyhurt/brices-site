@@ -6,11 +6,27 @@ import { heroChapters } from "./data";
 import { cn } from "@/lib/utils";
 
 import { A, glassDark } from "./parts";
+import { useNumbers } from "./stats";
 
-/** Wide video for landscape screens, tall for phones. Chosen once on load. */
-function pickVideo() {
-  const tall = typeof matchMedia !== "undefined" && matchMedia("(max-aspect-ratio: 1/1)").matches;
-  return tall ? { src: "/media/hero-tall.mp4", poster: "/media/hero-tall.jpg" } : { src: "/media/hero-wide.mp4", poster: "/media/hero-wide.jpg" };
+/** The three hero numbers: combined followers, views and engagement (latest saved, else the media kit's). */
+function useChapters() {
+  const n = useNumbers();
+  const live = [
+    { value: n.followers, label: heroChapters[0].label },
+    { value: n.views, label: n.viewsLabel },
+    { value: n.engagement, label: heroChapters[2].label },
+  ];
+  return heroChapters.map((c, i) => ({ ...c, ...(live[i] || {}) }));
+}
+
+/** The Casa Bianca house: a wide photo for landscape screens, a tall one for phones. */
+function House({ className, style }: { className?: string; style?: React.CSSProperties }) {
+  return (
+    <picture>
+      <source media="(max-aspect-ratio: 1/1)" srcSet="/media/hero-house-tall.jpg" />
+      <img src="/media/hero-house-wide.jpg" alt="" fetchPriority="high" decoding="async" className={className} style={style} />
+    </picture>
+  );
 }
 
 function fade(p: number, from: number, to: number) {
@@ -43,7 +59,7 @@ function Chapter({ p, from, to, value, label, place }: { p: number } & (typeof h
   const y = (p - (from + to) / 2) * -80;
   return (
     <div className="absolute inset-x-0 bottom-[16vh] px-5 text-white sm:px-8 lg:px-12" style={{ opacity: o, transform: `translateY(${y}px)`, visibility: o === 0 ? "hidden" : "visible" }} aria-hidden={o === 0}>
-      <p className={cn(glassDark, "font-label inline-block rounded-full px-3.5 py-1.5 text-[11px] tracking-[0.24em] uppercase")}>{place}</p>
+      {place ? <p className={cn(glassDark, "font-label inline-block rounded-full px-3.5 py-1.5 text-[11px] tracking-[0.24em] uppercase")}>{place}</p> : null}
       <p className="mt-2 text-[clamp(4rem,13vw,9rem)] leading-none tracking-[-0.01em] tabular-nums">{value}</p>
       <p className="font-label mt-2 text-sm tracking-[0.12em] uppercase opacity-90 sm:text-base">{label}</p>
     </div>
@@ -52,29 +68,17 @@ function Chapter({ p, from, to, value, label, place }: { p: number } & (typeof h
 
 function ScrubHero() {
   const wrapRef = useRef<HTMLElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const chapters = useChapters();
   const [p, setP] = useState(0);
   const [hint, setHint] = useState(true);
-  const [v] = useState(pickVideo);
 
   useEffect(() => {
-    const wrap = wrapRef.current,
-      vid = videoRef.current;
-    if (!wrap || !vid) return;
+    const wrap = wrapRef.current;
+    if (!wrap) return;
     let cur = 0,
-      lastSeek = -1,
       lastP = -1,
       raf = 0,
-      last = 0,
-      unlocked = false;
-    const unlock = () => {
-      // iOS shows only the poster until the video has been played once
-      if (unlocked) return;
-      unlocked = true;
-      const pr = vid.play();
-      if (pr && typeof pr.then === "function") pr.then(() => vid.pause()).catch(() => undefined);
-      else vid.pause();
-    };
+      last = 0;
     const tick = (now: number) => {
       const dt = Math.min(64, last ? now - last : 16);
       last = now;
@@ -85,19 +89,9 @@ function ScrubHero() {
       const tau = 30 + 110 * Math.exp(-gap / 0.01);
       cur += (target - cur) * (1 - Math.exp(-dt / tau));
       if (gap < 0.0008) cur = target;
-      const aim = gap > 0.12 ? target : cur;
-      if (Math.abs(cur - lastP) > 0.002) {
+      if (Math.abs(cur - lastP) > 0.001) {
         lastP = cur;
         setP(cur);
-      }
-      const d = vid.duration;
-      if (vid.readyState >= 2 && Number.isFinite(d) && d > 0 && !vid.seeking) {
-        const t = aim * (d - 0.05);
-        if (Math.abs(t - lastSeek) > 1 / 30) {
-          lastSeek = t;
-          vid.currentTime = t;
-          unlock();
-        }
       }
       raf = requestAnimationFrame(tick);
     };
@@ -123,12 +117,13 @@ function ScrubHero() {
   return (
     <section ref={wrapRef} id="top" className="relative h-[320vh] bg-black" aria-label="Meredith and Bernie" data-scrub-progress={p.toFixed(3)}>
       <div className="sticky top-0 h-dvh overflow-hidden">
-        <video ref={videoRef} src={v.src} poster={v.poster} muted playsInline preload="auto" className="absolute inset-0 h-full w-full object-cover" aria-hidden="true" />
+        {/* a slow zoom as you scroll, so the still photo doesn't feel flat */}
+        <House className="absolute inset-0 h-full w-full object-cover will-change-transform" style={{ transform: `scale(${1 + p * 0.1})` }} />
         <div className="absolute inset-0 bg-black" style={{ opacity: 0.22 + p * 0.12 }} />
         <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/55 to-transparent" />
         <Title p={p} />
-        {heroChapters.map((c) => (
-          <Chapter key={c.value} p={p} {...c} />
+        {chapters.map((c) => (
+          <Chapter key={c.from} p={p} {...c} />
         ))}
         <motion.div animate={{ opacity: hint ? 1 : 0 }} transition={{ duration: 0.5 }} className="font-label absolute inset-x-0 bottom-8 mx-auto flex w-fit flex-col items-center gap-2 text-[11px] tracking-[0.28em] text-white/85 uppercase" style={{ pointerEvents: "none" }}>
           Scroll
@@ -141,15 +136,15 @@ function ScrubHero() {
 
 /** Reduced motion: a still with the three numbers. */
 function StaticHero() {
-  const [v] = useState(pickVideo);
+  const chapters = useChapters();
   return (
     <section id="top" className="relative min-h-dvh bg-black" aria-label="Meredith and Bernie">
-      <img src={v.poster} alt="" className="absolute inset-0 h-full w-full object-cover" />
+      <House className="absolute inset-0 h-full w-full object-cover" />
       <div className="absolute inset-0 bg-black/35" />
       <Title />
       <div className="relative grid min-h-dvh content-end gap-8 px-5 pt-32 pb-14 text-white sm:grid-cols-3 sm:px-8 lg:px-12">
-        {heroChapters.map((c) => (
-          <div key={c.value}>
+        {chapters.map((c) => (
+          <div key={c.from}>
             <p className="text-6xl leading-none font-extralight">{c.value}</p>
             <p className="font-label mt-2 text-sm tracking-[0.12em] uppercase">{c.label}</p>
           </div>

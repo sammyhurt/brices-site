@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 
 import { partnerships } from "./data";
 import { Chip, InstagramIcon } from "./parts";
+import { fmt } from "./stats";
 
 /**
  * Private admin for Meredith & Bernie: the hotel pipeline, site visits and sending settings.
@@ -534,6 +535,114 @@ function StatsPanel({ st }: { st: Stats }) {
 }
 
 /* ---------- settings ---------- */
+/* ---------- our numbers (combined across all four accounts) ---------- */
+const ACCOUNTS = [
+  { key: "meredith_tiktok", who: "Meredith", where: "TikTok", handle: "@meredithbrice_" },
+  { key: "meredith_instagram", who: "Meredith", where: "Instagram", handle: "@merrymorris" },
+  { key: "bernie_tiktok", who: "Bernie", where: "TikTok", handle: "@llilbill" },
+  { key: "bernie_instagram", who: "Bernie", where: "Instagram", handle: "@llilbill" },
+] as const;
+type AccKey = (typeof ACCOUNTS)[number]["key"];
+interface SavedStats { accounts?: Partial<Record<AccKey, { followers: number | null; views: number | null }>>; engagement?: string; views_period?: string; show_split?: boolean; updated_at?: string }
+
+function NumbersPanel({ raw, onSave, busy }: { raw: string; onSave: (v: Record<string, unknown>) => Promise<boolean>; busy: boolean }) {
+  const saved = useMemo<SavedStats>(() => {
+    try {
+      return raw ? (JSON.parse(raw) as SavedStats) : {};
+    } catch {
+      return {};
+    }
+  }, [raw]);
+  const init = () => Object.fromEntries(ACCOUNTS.map((a) => [a.key, { followers: saved.accounts?.[a.key]?.followers?.toString() ?? "", views: saved.accounts?.[a.key]?.views?.toString() ?? "" }])) as Record<AccKey, { followers: string; views: string }>;
+  const [acc, setAcc] = useState(init);
+  const [eng, setEng] = useState(saved.engagement || "");
+  const [period, setPeriod] = useState(saved.views_period || "");
+  const [split, setSplit] = useState(saved.show_split !== false);
+  useEffect(() => {
+    setAcc(init());
+    setEng(saved.engagement || "");
+    setPeriod(saved.views_period || "");
+    setSplit(saved.show_split !== false);
+  }, [saved]); // eslint-disable-line react-hooks/exhaustive-deps
+  const n = (v: string) => (v.replace(/[^0-9]/g, "") === "" ? null : Number(v.replace(/[^0-9]/g, "")));
+  const filled = (f: "followers" | "views") => ACCOUNTS.filter((a) => n(acc[a.key][f]) !== null).length;
+  const total = (f: "followers" | "views", keys: readonly AccKey[] = ACCOUNTS.map((a) => a.key)) => keys.reduce((t, k) => t + (n(acc[k][f]) || 0), 0);
+  const set = (k: AccKey, f: "followers" | "views", v: string) => setAcc((cur) => ({ ...cur, [k]: { ...cur[k], [f]: v.replace(/[^0-9,]/g, "") } }));
+  const fOk = filled("followers") === 4,
+    vOk = filled("views") === 4;
+  return (
+    <form
+      className={cn(card, "grid gap-5")}
+      onSubmit={(e) => {
+        e.preventDefault();
+        void onSave({ accounts: acc, engagement: eng, views_period: period, show_split: split });
+      }}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-lg font-medium">Our numbers</h3>
+          <p className="text-muted-foreground mt-1 max-w-xl text-sm">Copy each account's followers and views from the app's analytics. The site adds all four together. Until every account has a number, the site keeps the media kit's numbers.</p>
+        </div>
+        {saved.updated_at ? <Chip>Last saved {dateOnly(saved.updated_at)}</Chip> : <Chip tone="warn">Showing media kit numbers</Chip>}
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[480px] text-sm">
+          <thead className={cn(label, "text-left")}>
+            <tr>
+              <th className="pb-2 font-normal">Account</th>
+              <th className="pb-2 font-normal">Followers</th>
+              <th className="pb-2 font-normal">Views</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y">
+            {ACCOUNTS.map((a) => (
+              <tr key={a.key}>
+                <td className="py-2 pr-3">
+                  <span className="font-medium">{a.who}</span> · {a.where} <span className="text-muted-foreground">{a.handle}</span>
+                </td>
+                <td className="py-2 pr-3">
+                  <Input aria-label={`${a.who} ${a.where} followers`} value={acc[a.key].followers} onChange={(e) => set(a.key, "followers", e.target.value)} inputMode="numeric" placeholder="e.g. 9210" className="w-32" />
+                </td>
+                <td className="py-2">
+                  <Input aria-label={`${a.who} ${a.where} views`} value={acc[a.key].views} onChange={(e) => set(a.key, "views", e.target.value)} inputMode="numeric" placeholder="e.g. 1200000" className="w-36" />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr className="border-t font-medium">
+              <td className="pt-3 pr-3">Combined</td>
+              <td className="pt-3 pr-3 tabular-nums">{fOk ? fmt(total("followers")) : `${filled("followers")} of 4 filled`}</td>
+              <td className="pt-3 tabular-nums">{vOk ? fmt(total("views"), true) : `${filled("views")} of 4 filled`}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="grid gap-1.5">
+          <span className={label}>Average engagement rate (%)</span>
+          <Input value={eng} onChange={(e) => setEng(e.target.value.replace(/[^0-9.]/g, ""))} inputMode="decimal" placeholder="6.3" className="w-28" />
+          <span className="text-muted-foreground text-xs">Can't be added across accounts, so enter the one number you use, like the media kit's.</span>
+        </label>
+        <label className="grid gap-1.5">
+          <span className={label}>Views counted over (optional)</span>
+          <Input value={period} onChange={(e) => setPeriod(e.target.value)} maxLength={40} placeholder="e.g. last 12 months" className="max-w-xs" />
+          <span className="text-muted-foreground text-xs">Shown next to the views on the site. Leave empty for all-time views.</span>
+        </label>
+      </div>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={split} onChange={(e) => setSplit(e.target.checked)} className="size-4" />
+        Show who brings what under the followers{fOk ? `: Meredith ${fmt(total("followers", ["meredith_tiktok", "meredith_instagram"]))} · Bernie ${fmt(total("followers", ["bernie_tiktok", "bernie_instagram"]))}` : ""}
+      </label>
+      <div>
+        <button type="submit" className={solid} disabled={busy}>
+          <Check className="size-4" /> Save numbers
+        </button>
+      </div>
+    </form>
+  );
+}
+
 function SettingsPanel({ st, sentToday, onSave, busy }: { st: Settings; sentToday: number; onSave: (v: Record<string, string | boolean>) => Promise<boolean>; busy: boolean }) {
   const [site, setSite] = useState(st.site_url || "");
   const [addr, setAddr] = useState(st.postal_address || "");
@@ -675,6 +784,13 @@ export default function Admin() {
     flash("Added. The draft is at the top of To review.");
     return true;
   };
+  const saveNumbers = async (v: Record<string, unknown>) => {
+    const d = await call<Resp>({ action: "stats", values: v });
+    if (!d) return false;
+    if (d.settings) setData((cur) => (cur ? { ...cur, settings: d.settings! } : cur));
+    flash("Numbers saved. The site shows them within a few minutes.");
+    return true;
+  };
   const saveSettings = async (v: Record<string, string | boolean>) => {
     const d = await call<Resp>({ action: "settings", values: v });
     if (!d) return false;
@@ -775,7 +891,10 @@ export default function Admin() {
       ) : tab === "site" ? (
         <StatsPanel st={data.stats} />
       ) : tab === "settings" ? (
-        <SettingsPanel st={st} sentToday={data.sent_today} onSave={saveSettings} busy={busy} />
+        <div className="grid gap-4">
+          <NumbersPanel raw={st.stats || ""} onSave={saveNumbers} busy={busy} />
+          <SettingsPanel st={st} sentToday={data.sent_today} onSave={saveSettings} busy={busy} />
+        </div>
       ) : (
         <section className="grid gap-4">
           {!st.site_url || !st.postal_address ? (
