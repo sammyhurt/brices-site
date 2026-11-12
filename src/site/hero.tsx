@@ -6,6 +6,18 @@ import { heroChapters } from "./data";
 import { cn } from "@/lib/utils";
 
 import { A, glassDark } from "./parts";
+import { useNumbers } from "./stats";
+
+/** The three hero numbers: combined followers, views and engagement (latest saved, else the media kit's). */
+function useChapters() {
+  const n = useNumbers();
+  const live = [
+    { value: n.followers, label: heroChapters[0].label },
+    { value: n.views, label: n.viewsLabel },
+    { value: n.engagement, label: heroChapters[2].label },
+  ];
+  return heroChapters.map((c, i) => ({ ...c, ...(live[i] || {}) }));
+}
 
 /** The Casa Bianca house: a wide photo for landscape screens, a tall one for phones. */
 function House({ className, style }: { className?: string; style?: React.CSSProperties }) {
@@ -56,6 +68,7 @@ function Chapter({ p, from, to, value, label, place }: { p: number } & (typeof h
 
 function ScrubHero() {
   const wrapRef = useRef<HTMLElement>(null);
+  const chapters = useChapters();
   const [p, setP] = useState(0);
   const [hint, setHint] = useState(true);
 
@@ -109,8 +122,8 @@ function ScrubHero() {
         <div className="absolute inset-0 bg-black" style={{ opacity: 0.22 + p * 0.12 }} />
         <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/55 to-transparent" />
         <Title p={p} />
-        {heroChapters.map((c) => (
-          <Chapter key={c.value} p={p} {...c} />
+        {chapters.map((c) => (
+          <Chapter key={c.from} p={p} {...c} />
         ))}
         <motion.div animate={{ opacity: hint ? 1 : 0 }} transition={{ duration: 0.5 }} className="font-label absolute inset-x-0 bottom-8 mx-auto flex w-fit flex-col items-center gap-2 text-[11px] tracking-[0.28em] text-white/85 uppercase" style={{ pointerEvents: "none" }}>
           Scroll
@@ -123,14 +136,15 @@ function ScrubHero() {
 
 /** Reduced motion: a still with the three numbers. */
 function StaticHero() {
+  const chapters = useChapters();
   return (
     <section id="top" className="relative min-h-dvh bg-black" aria-label="Meredith and Bernie">
       <House className="absolute inset-0 h-full w-full object-cover" />
       <div className="absolute inset-0 bg-black/35" />
       <Title />
       <div className="relative grid min-h-dvh content-end gap-8 px-5 pt-32 pb-14 text-white sm:grid-cols-3 sm:px-8 lg:px-12">
-        {heroChapters.map((c) => (
-          <div key={c.value}>
+        {chapters.map((c) => (
+          <div key={c.from}>
             <p className="text-6xl leading-none font-extralight">{c.value}</p>
             <p className="font-label mt-2 text-sm tracking-[0.12em] uppercase">{c.label}</p>
           </div>

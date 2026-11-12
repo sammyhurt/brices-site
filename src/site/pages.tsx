@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
-import { brand, couples, ideas, partnerships, pkg, quietLuxury, reach, reachAsOf, socials, type Clip, type Partnership } from "./data";
+import { brand, couples, ideas, partnerships, pkg, quietLuxury, reach, socials, type Clip, type Partnership } from "./data";
 import { Hero } from "./hero";
 import { A, Display, Eyebrow, InstagramIcon, Reveal, Section, TikTokIcon, glassDark, media } from "./parts";
+import { useNumbers } from "./stats";
 import { VISIT_URL, trackEvent, visitCode } from "./track";
 
 const btn = "font-label inline-flex h-12 items-center gap-2 rounded-full px-7 text-[11px] tracking-[0.24em] uppercase transition-colors";
@@ -78,18 +79,26 @@ function QuietLuxury() {
 
 /* ───────── Our reach, by the numbers (slide 4) ───────── */
 function Reach() {
+  const n = useNumbers();
+  // the first three come from the admin once saved (combined across all four accounts); the audience numbers stay from the kit
+  const cards = reach.map((r, i) => (i === 0 ? { ...r, value: n.followers } : i === 1 ? { ...r, value: n.views, label: n.viewsLabel } : i === 2 ? { ...r, value: n.engagement } : r));
   return (
     <Section id="reach">
       <div className={wrap}>
         <Reveal className="mb-12">
-          <Title eyebrow={`Influencer report · ${reachAsOf}`}>Our reach, by the numbers</Title>
+          <Title eyebrow={`Influencer report · ${n.asOf}`}>Our reach, by the numbers</Title>
         </Reveal>
         <dl className="grid grid-cols-2 gap-3 sm:grid-cols-6">
-          {reach.map((r, i) => (
+          {cards.map((r, i) => (
             <Reveal key={r.label} delay={i * 0.05} className={cn("bg-secondary rounded-sm p-5 sm:p-8", i < 3 ? "sm:col-span-2" : "sm:col-span-3", i === 4 && "col-span-2")}>
               <dt className="sr-only">{r.label}</dt>
               <dd className="text-[clamp(2.8rem,5vw,4.2rem)] leading-none tabular-nums">{r.value}</dd>
               <dd className="font-label text-muted-foreground mt-4 text-sm leading-snug">{r.label}</dd>
+              {i === 0 && n.split ? (
+                <dd className="font-label text-muted-foreground/80 mt-2 text-xs tracking-[0.06em]">
+                  Meredith {n.split.meredith} · Bernie {n.split.bernie}
+                </dd>
+              ) : null}
             </Reveal>
           ))}
         </dl>
