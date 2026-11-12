@@ -99,7 +99,7 @@ export const pkg = [
 
 /** Hero chapters shown over the scroll video. */
 export const heroChapters = [
-  { from: 0.25, to: 0.44, value: "14.1K", label: "combined followers", place: "Willow Tree House · New York" },
-  { from: 0.51, to: 0.67, value: "1.8M+", label: "views across Instagram and TikTok", place: "Catskills · New York" },
+  { from: 0.25, to: 0.44, value: "14.1K", label: "combined followers", place: "Casa Bianca · Sicily, Italy" },
+  { from: 0.51, to: 0.67, value: "1.8M+", label: "views across Instagram and TikTok", place: "" },
   { from: 0.75, to: 0.95, value: "6.3%", label: "average engagement rate", place: "Styled, shot and edited by us" },
 ];
