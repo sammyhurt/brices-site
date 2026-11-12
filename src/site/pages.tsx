@@ -355,7 +355,7 @@ function Inquire() {
             <Title eyebrow="Hotels, resorts and stays">Let's plan your next partnership</Title>
             <p className="text-muted-foreground mt-6 max-w-lg">
               Tell us about your property and when you'd like content. We'll reply by email, or write to us directly at{" "}
-              <a href={`mailto:${brand.email}`} className="text-foreground underline underline-offset-4">
+              <a href={`mailto:${brand.email}`} className="text-foreground py-2.5 underline underline-offset-4">
                 {brand.email}
               </a>
               .
@@ -416,13 +416,6 @@ function Inquire() {
               </div>
             </form>
           )}
-          <div className="border-foreground/15 mt-14 flex flex-wrap items-center gap-x-6 gap-y-3 border-t pt-6">
-            {socials.map((s) => (
-              <a key={s.label + s.handle} href={s.href} target="_blank" rel="noreferrer" className="font-label text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm">
-                {s.label === "TikTok" ? <TikTokIcon /> : <InstagramIcon />} {s.handle}
-              </a>
-            ))}
-          </div>
         </div>
       </div>
     </section>

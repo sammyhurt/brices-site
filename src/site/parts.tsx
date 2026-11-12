@@ -147,20 +147,20 @@ export function Footer() {
           <p className="text-background text-[15px] tracking-[0.2em] uppercase">Meredith &amp; Bernie</p>
           <p className="mt-3 max-w-xs text-sm leading-relaxed">Luxury travel, fashion and couples content from NYC. Styled, shot and edited by us.</p>
         </div>
-        <div className="grid gap-2 text-sm">
-          <p className="font-label text-background/50 text-[11px] tracking-[0.22em] uppercase">Follow</p>
+        <div className="grid content-start text-sm">
+          <p className="font-label text-background/50 mb-1 text-[11px] tracking-[0.22em] uppercase">Follow</p>
           {socials.map((s) => (
-            <a key={s.label + s.handle} href={s.href} target="_blank" rel="noreferrer" className="hover:text-background inline-flex items-center gap-2">
+            <a key={s.label + s.handle} href={s.href} target="_blank" rel="noreferrer" className="hover:text-background inline-flex min-h-11 items-center gap-2">
               {s.label === "TikTok" ? <TikTokIcon /> : <InstagramIcon />} {s.handle}
             </a>
           ))}
         </div>
-        <div className="grid content-start gap-2 text-sm">
-          <p className="font-label text-background/50 text-[11px] tracking-[0.22em] uppercase">Partnerships</p>
-          <a href={`mailto:${brand.email}`} className="hover:text-background break-all">
+        <div className="grid content-start text-sm">
+          <p className="font-label text-background/50 mb-1 text-[11px] tracking-[0.22em] uppercase">Partnerships</p>
+          <a href={`mailto:${brand.email}`} className="hover:text-background inline-flex min-h-11 items-center break-all">
             {brand.email}
           </a>
-          <a href={brand.mediaKit} className="hover:text-background" target="_blank" rel="noreferrer">
+          <a href={brand.mediaKit} className="hover:text-background inline-flex min-h-11 items-center" target="_blank" rel="noreferrer">
             Media kit (PDF)
           </a>
         </div>
