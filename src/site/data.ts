@@ -56,9 +56,9 @@ export const partnerships: Partnership[] = [
     summary: "A Catskills winter getaway: the sauna, the cabin interiors and couples content inside the property.",
     photos: ["catskills-1", "catskills-2", "catskills-3", "catskills-4", "catskills-5", "catskills-6"],
     clips: [
-      { img: "catskills-v-sauna", title: "Sauna escape", href: "https://www.tiktok.com/@llilbill/video/7607234270289038623" },
-      { img: "catskills-v-getaway", title: "Catskills winter getaway", href: "https://www.tiktok.com/@meredithbrice_/video/7608017044650347789" },
-      { img: "catskills-v-inside", title: "Couple content inside the hotel" },
+      { img: "catskills-v-sauna", title: "Sauna escape", href: "https://www.tiktok.com/@meredithbrice_/video/7608017044650347789" },
+      { img: "catskills-v-getaway", title: "Catskills winter getaway" },
+      { img: "catskills-v-inside", title: "Couple content inside the hotel", href: "https://www.tiktok.com/@llilbill/video/7607234270289038623" },
     ],
   },
   {
