@@ -40,10 +40,12 @@ export interface Partnership {
   slug: string; name: string; place: string; kind: string; cover: string; photos: string[]; clips: Clip[]; gallery?: string; summary: string;
   /** Top of the partnership page: which photo (default: cover) and which part of it stays in view on wide screens (CSS object-position). */
   hero?: string; focus?: string;
+  /** Where to center the short "Next partnership" banner on the same photo. */
+  band?: string;
 }
 export const partnerships: Partnership[] = [
   {
-    slug: "willow-tree-house", name: "Willow Tree House", place: "New York", kind: "Treehouse stay", cover: "willow-cover", focus: "50% 22%",
+    slug: "willow-tree-house", name: "Willow Tree House", place: "New York", kind: "Treehouse stay", cover: "willow-cover", focus: "50% 22%", band: "50% 33%",
     summary: "A treehouse stay in New York, photographed and filmed by us: the property, the views and couples content.",
     photos: ["willow-1", "willow-2", "willow-3", "willow-4", "willow-5", "willow-6", "willow-7"],
     clips: [
@@ -54,7 +56,7 @@ export const partnerships: Partnership[] = [
     gallery: "https://meredithmorris.pixieset.com/willowtreehouse/",
   },
   {
-    slug: "catskills", name: "Catskills", place: "New York", kind: "Winter getaway", cover: "catskills-cover", hero: "catskills-6", focus: "50% 70%",
+    slug: "catskills", name: "Catskills", place: "New York", kind: "Winter getaway", cover: "catskills-cover", hero: "catskills-6", focus: "50% 70%", band: "50% 66%",
     summary: "A Catskills winter getaway: the sauna, the cabin interiors and couples content inside the property.",
     photos: ["catskills-1", "catskills-2", "catskills-3", "catskills-4", "catskills-5", "catskills-6"],
     clips: [
@@ -64,7 +66,7 @@ export const partnerships: Partnership[] = [
     ],
   },
   {
-    slug: "casa-bianca", name: "Casa Bianca", place: "Sicily, Italy", kind: "Airbnb collab", cover: "casa-cover", focus: "50% 43%",
+    slug: "casa-bianca", name: "Casa Bianca", place: "Sicily, Italy", kind: "Airbnb collab", cover: "casa-cover", focus: "50% 43%", band: "50% 42%",
     summary: "An Airbnb collab at Casa Bianca on the Sicilian coast: the house, the sea, sunsets from the bedroom and POV content.",
     photos: ["casa-1", "casa-2", "casa-3", "casa-4", "casa-5", "casa-6", "casa-7"],
     clips: [

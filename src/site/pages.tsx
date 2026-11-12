@@ -616,7 +616,7 @@ export function PartnershipPage({ slug }: { slug: string }) {
         </div>
       </section>
       <A to={`/partnerships/${next.slug}`} className="bg-foreground text-background group relative block overflow-hidden">
-        <img src={media(next.cover)} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-35 transition-opacity group-hover:opacity-50" />
+        <img src={media(next.hero || next.cover)} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-35 transition-opacity group-hover:opacity-50" style={{ objectPosition: next.band || next.focus || "50% 50%" }} />
         <div className="relative px-5 py-20 sm:px-8 lg:px-12">
           <p className="font-label text-[11px] tracking-[0.28em] uppercase opacity-75">Next partnership</p>
           <p className="mt-3 inline-flex items-center gap-4 text-[clamp(2rem,5vw,4rem)] font-light tracking-[0.06em] uppercase">
