@@ -573,7 +573,7 @@ export function PartnershipPage({ slug }: { slug: string }) {
   return (
     <main>
       <section className="relative h-[82dvh] min-h-[32rem] bg-black">
-        <img src={media(p.cover)} alt={`${p.name}, ${p.place}`} className="absolute inset-0 h-full w-full object-cover opacity-85" />
+        <img src={media(p.hero || p.cover)} alt={`${p.name}, ${p.place}`} className="absolute inset-0 h-full w-full object-cover opacity-85" style={{ objectPosition: p.focus || "50% 50%" }} />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/30" />
         <div className="absolute inset-x-0 bottom-0 px-5 pb-12 text-white sm:px-8 lg:px-12">
           <A to="/#partnerships" className={cn(glassDark, "font-label mb-8 inline-flex items-center gap-2 rounded-full px-4 py-2 text-[11px] tracking-[0.24em] uppercase hover:bg-white/20")}>
