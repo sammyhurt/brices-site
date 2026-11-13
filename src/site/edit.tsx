@@ -10,7 +10,7 @@
  * This file only describes the pieces (which box is a photo, a video, a section). Everything you do in edit mode,
  * selecting, dragging, resizing, the toolbars, lives in editor.tsx, which visitors never download.
  */
-import { createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ImgHTMLAttributes, type MutableRefObject, type ReactNode } from "react";
+import { createContext, lazy, Suspense, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ImgHTMLAttributes, type MutableRefObject, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -49,6 +49,17 @@ export interface Sty {
   inner?: "s" | "m" | "l";
   fill?: string; // a color or gradient behind a section
   free?: { d?: Free; t?: Free; p?: Free }; // free position on desktop, tablet, phone
+  box?: { d?: Box; t?: Box; p?: Box }; // a width and/or height set by hand, per screen size
+  rad?: number; // corner roundness, px
+  text?: string; // words: what it says instead
+  fs?: number; // words: size, 100 = as designed
+  align?: "left" | "center" | "right";
+  color?: string;
+  hide?: boolean; // words: not shown
+}
+export interface Box {
+  w?: number;
+  h?: number;
 }
 const SHADOW = { s: "0 6px 16px -6px rgb(0 0 0 / 0.35)", m: "0 18px 40px -14px rgb(0 0 0 / 0.5)", l: "0 34px 70px -18px rgb(0 0 0 / 0.65)" };
 export const INNER = { s: "inset 0 0 18px rgb(0 0 0 / 0.3)", m: "inset 0 0 40px rgb(0 0 0 / 0.45)", l: "inset 0 0 80px rgb(0 0 0 / 0.6)" };
@@ -61,6 +72,7 @@ export function look(s?: Sty): CSSProperties | undefined {
   if (s.bg) o.backdropFilter = o.WebkitBackdropFilter = `blur(${s.bg}px)`;
   if (s.op != null && s.op !== 100) o.opacity = s.op / 100;
   if (s.blend) o.mixBlendMode = s.blend;
+  if (s.rad != null) o.borderRadius = `${s.rad}px`;
   if (s.mask) o.borderRadius = s.mask === "round" ? "1.5rem" : s.mask === "circle" ? "9999px" : "9999px 9999px 0 0";
   if (s.ar || s.mask === "circle") o.aspectRatio = s.ar || "1 / 1";
   if (s.shadow) o.boxShadow = SHADOW[s.shadow];
@@ -72,8 +84,89 @@ export function look(s?: Sty): CSSProperties | undefined {
     o[`--fy-${d}`] = `${fr.y}px`;
     o[`--fs-${d}`] = fr.s ?? 1;
   }
+  for (const d of ["d", "t", "p"] as const) {
+    const b = s.box?.[d];
+    if (b?.w) o[`--w-${d}`] = `${b.w}px`;
+    if (b?.h) o[`--h-${d}`] = `${b.h}px`;
+  }
   return o as CSSProperties;
 }
+/** Marks that tell global.css on which screen sizes a hand-set width or height applies. */
+function boxed(s?: Sty): Record<string, string> | undefined {
+  if (!s?.box) return undefined;
+  const o: Record<string, string> = {};
+  for (const d of ["d", "t", "p"] as const) {
+    if (s.box[d]?.w) o[`data-w${d}`] = "";
+    if (s.box[d]?.h) o[`data-h${d}`] = "";
+  }
+  return o;
+}
+
+/* ---------- words ---------- */
+
+/**
+ * The words on a page (headings, paragraphs, buttons, the numbers) are not wrapped one by one in the page code.
+ * Instead each gets a name from where it sits: its section, its kind and its count there ("t|about|p1"), and a saved
+ * look for that name is put on it here, straight after the page draws. In edit mode they are also marked selectable.
+ */
+const WORDS = "h1,h2,h3,h4,p,li,dd,blockquote,figcaption,a[class*='rounded-full']";
+const original = new WeakMap<Element, string>();
+const put = (el: HTMLElement, prop: string, v: string | undefined) => {
+  if (v) {
+    if (el.style.getPropertyValue(prop) !== v) el.style.setProperty(prop, v);
+  } else if (el.style.getPropertyValue(prop)) el.style.removeProperty(prop);
+};
+/** Set what a piece of text says, keeping a headline's decorative first letter in its own span. */
+export function setWords(el: HTMLElement, text: string) {
+  const [a, b] = Array.from(el.children) as HTMLElement[];
+  if (el.children.length === 2 && a.tagName === "SPAN" && b.tagName === "SPAN" && !a.children.length && !b.children.length) {
+    if (a.textContent !== text.charAt(0)) a.textContent = text.charAt(0);
+    if (b.textContent !== text.slice(1)) b.textContent = text.slice(1);
+  } else if (el.textContent !== text) el.textContent = text;
+}
+export function applyWords(L: Layout, editing: boolean) {
+  const main = document.querySelector("main");
+  if (!main) return;
+  const styles = L.style || {};
+  if (!editing && !main.querySelector("[data-tk]") && !Object.keys(styles).some((k) => k.startsWith("t|"))) return;
+  const count: Record<string, number> = {};
+  main.querySelectorAll<HTMLElement>(WORDS).forEach((el) => {
+    if (el.closest("[data-edit-ui],form") || el.querySelector(WORDS) || el.classList.contains("sr-only")) return;
+    const sec = el.closest<HTMLElement>("[data-sec]")?.dataset.sec || "page:" + location.pathname;
+    const tag = el.tagName.toLowerCase();
+    const n = (count[sec + tag] = (count[sec + tag] ?? -1) + 1);
+    const key = `t|${sec}|${tag}${n}`;
+    const st = styles[key];
+    if (el.dataset.tk !== key) el.dataset.tk = key;
+    if (editing) el.dataset.ed = "text";
+    else delete el.dataset.ed;
+    if (el.isContentEditable) return; // being typed in right now
+    for (const d of ["d", "t", "p"] as const) {
+      const fr = st?.free?.[d];
+      put(el, `--fx-${d}`, fr ? `${fr.x}px` : undefined);
+      put(el, `--fy-${d}`, fr ? `${fr.y}px` : undefined);
+      put(el, `--fs-${d}`, fr ? String(fr.s ?? 1) : undefined);
+    }
+    const free = !!(st?.free && (st.free.d || st.free.t || st.free.p));
+    if (free !== (el.dataset.free !== undefined)) free ? (el.dataset.free = "") : delete el.dataset.free;
+    put(el, "opacity", st?.op != null && st.op !== 100 ? String(st.op / 100) : undefined);
+    const f = [st?.blur && `blur(${st.blur}px)`, st?.shadow && `drop-shadow(${st.shadow === "s" ? "0 2px 4px rgb(0 0 0 / 0.35)" : st.shadow === "m" ? "0 6px 12px rgb(0 0 0 / 0.45)" : "0 12px 24px rgb(0 0 0 / 0.55)"})`].filter(Boolean).join(" ");
+    put(el, "filter", f || undefined);
+    put(el, "zoom", st?.fs && st.fs !== 100 ? String(st.fs / 100) : undefined);
+    put(el, "text-align", st?.align);
+    put(el, "color", st?.color);
+    put(el, "display", st?.hide ? "none" : undefined);
+    if (st?.text != null) {
+      if (!original.has(el)) original.set(el, el.textContent || "");
+      setWords(el, st.text);
+    } else if (original.has(el)) {
+      setWords(el, original.get(el)!);
+      original.delete(el);
+    }
+  });
+}
+/** What a piece of text said before it was reworded in edit mode. */
+export const wordsBefore = (el: Element) => original.get(el);
 const isFree = (s?: Sty) => (s?.free && (s.free.d || s.free.t || s.free.p) ? "" : undefined);
 /** How an item can be resized: where the size is stored, its value now, and the choices from small to large. */
 export interface SizeSpec {
@@ -167,6 +260,22 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
     addEventListener("storage", sync);
     return () => removeEventListener("storage", sync);
   }, []);
+  // put saved looks on the words after every draw, and again whenever the page changes under us
+  const L0 = draft || BASE;
+  useLayoutEffect(() => {
+    applyWords(L0, editing);
+    if (!editing && !Object.keys(L0.style || {}).some((k) => k.startsWith("t|"))) return;
+    let raf = 0;
+    const mo = new MutationObserver(() => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => applyWords(L0, editing));
+    });
+    mo.observe(document.body, { childList: true, subtree: true });
+    return () => {
+      mo.disconnect();
+      cancelAnimationFrame(raf);
+    };
+  }, [L0, editing]);
   const src = useCallback((name: string) => (name.startsWith("up:") ? uploads[name] || "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" : media(name)), [uploads]);
   const addUpload = useCallback((name: string, url: string) => {
     setUploads((u) => ({ ...u, [name]: url }));
@@ -268,8 +377,8 @@ export function Pic({ slot, name, focus, size, className, style, ...rest }: { sl
     delete (rest as ImgHTMLAttributes<HTMLImageElement>).srcSet;
     delete (rest as ImgHTMLAttributes<HTMLImageElement>).sizes;
   }
-  if (!editing) return <img src={src(shown)} className={className} style={s} data-free={isFree(sty)} {...rest} />;
-  return <img src={src(shown)} {...rest} className={className} style={s} data-free={isFree(sty)} draggable={false} data-ed="pic" data-slot={slot} data-name={shown} data-size={size ? JSON.stringify(size) : undefined} />;
+  if (!editing) return <img src={src(shown)} className={className} style={s} data-free={isFree(sty)} {...boxed(sty)} {...rest} />;
+  return <img src={src(shown)} {...rest} className={className} style={s} data-free={isFree(sty)} {...boxed(sty)} draggable={false} data-ed="pic" data-slot={slot} data-name={shown} data-size={size ? JSON.stringify(size) : undefined} />;
 }
 
 /**
@@ -284,14 +393,14 @@ export function Item({ k, id, ids, type = "photo", flow = "x", label, size, grou
   const veil = sty?.inner ? <div aria-hidden className="pointer-events-none absolute inset-0 z-[1]" style={{ boxShadow: INNER[sty.inner], borderRadius: "inherit" }} /> : null;
   if (!editing)
     return (
-      <div className={cn("relative", className)} style={st} data-free={isFree(sty)} data-fill={sty?.fill ? "" : undefined}>
+      <div className={cn("relative", className)} style={st} data-free={isFree(sty)} data-fill={sty?.fill ? "" : undefined} data-sec={type === "section" ? id : undefined} {...boxed(sty)}>
         {children}
         {veil}
       </div>
     );
   lists.current[k] = ids;
   return (
-    <div className={cn("relative", className)} style={st} data-free={isFree(sty)} data-fill={sty?.fill ? "" : undefined} data-ed="item" data-k={k} data-id={id} data-type={type} data-flow={flow} data-label={label} data-size={size ? JSON.stringify(size) : undefined} data-group={group ? JSON.stringify(group) : undefined}>
+    <div className={cn("relative", className)} style={st} data-free={isFree(sty)} data-fill={sty?.fill ? "" : undefined} data-sec={type === "section" ? id : undefined} {...boxed(sty)} data-ed="item" data-k={k} data-id={id} data-type={type} data-flow={flow} data-label={label} data-size={size ? JSON.stringify(size) : undefined} data-group={group ? JSON.stringify(group) : undefined}>
       {children}
       {veil}
     </div>

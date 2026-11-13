@@ -181,7 +181,27 @@ html.editing.dragging, html.editing.dragging * { cursor: grabbing !important; }
 
 /* Looks set in edit mode. A free-moved thing keeps its normal spot in the layout and is shifted from there,
    separately for desktop, tablet and phone, so moving it on a laptop never disturbs the phone page. */
-[data-free] { z-index: 5; transform: translate(var(--fx-d, 0px), var(--fy-d, 0px)) scale(var(--fs-d, 1)); }
-@media (max-width: 1023px) { [data-free] { transform: translate(var(--fx-t, 0px), var(--fy-t, 0px)) scale(var(--fs-t, 1)); } }
-@media (max-width: 639px) { [data-free] { transform: translate(var(--fx-p, 0px), var(--fy-p, 0px)) scale(var(--fs-p, 1)); } }
+[data-free] { z-index: 5; translate: var(--fx-d, 0px) var(--fy-d, 0px); scale: var(--fs-d, 1); }
+@media (max-width: 1023.98px) { [data-free] { translate: var(--fx-t, 0px) var(--fy-t, 0px); scale: var(--fs-t, 1); } }
+@media (max-width: 639.98px) { [data-free] { translate: var(--fx-p, 0px) var(--fy-p, 0px); scale: var(--fs-p, 1); } }
+/* A width or height set by hand, each for its own screen size. A photo fills the frame it is given (cropped, never stretched). */
+@media (min-width: 1024px) {
+  [data-wd] { width: var(--w-d) !important; max-width: none !important; flex: none; }
+  [data-hd], [data-hd] > button, [data-hd] > button > img { height: var(--h-d) !important; aspect-ratio: auto !important; }
+  [data-hd] > button > img { object-fit: cover; }
+}
+@media (min-width: 640px) and (max-width: 1023.98px) {
+  [data-wt] { width: var(--w-t) !important; max-width: none !important; flex: none; }
+  [data-ht], [data-ht] > button, [data-ht] > button > img { height: var(--h-t) !important; aspect-ratio: auto !important; }
+  [data-ht] > button > img { object-fit: cover; }
+}
+@media (max-width: 639.98px) {
+  [data-wp] { width: var(--w-p) !important; max-width: none !important; flex: none; }
+  [data-hp], [data-hp] > button, [data-hp] > button > img { height: var(--h-p) !important; aspect-ratio: auto !important; }
+  [data-hp] > button > img { object-fit: cover; }
+}
+img[data-hd], img[data-ht], img[data-hp] { object-fit: cover; }
 [data-fill] > section, [data-fill] > div > section { background: var(--fill) !important; }
+html.editing [data-ed="text"] { cursor: grab; }
+html.editing:not(.dragging) [data-ed="text"]:hover { outline: 2px dashed rgb(14 165 233 / 0.9); outline-offset: 3px; }
+html.editing [contenteditable] { user-select: text; -webkit-user-select: text; cursor: text; outline: 2px solid rgb(14 165 233); outline-offset: 3px; }

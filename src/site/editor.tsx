@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState, type PointerEvent as RPointer
 import { cn } from "@/lib/utils";
 
 import { partnerships } from "./data";
-import { passcode, useLayout, type Free, type Layout, type SizeSpec, type Sty } from "./edit";
+import { passcode, useLayout, wordsBefore, type Free, type Layout, type SizeSpec, type Sty } from "./edit";
 import library from "./media-list.json";
 import { go } from "./parts";
 import { addPhoto } from "./uploads";
@@ -25,7 +25,7 @@ const DEV_NAME = { d: "desktop", t: "tablet", p: "phone" };
 /** Which screen size we are on right now (the same cut-offs the site's layout uses). */
 const dev = (): Dev => (innerWidth < 640 ? "p" : innerWidth < 1024 ? "t" : "d");
 const inFrame = () => /[?&]frame=1/.test(location.search);
-const keyOf = (sel: NonNullable<Sel>) => (sel.kind === "item" ? `i|${sel.k}|${sel.id}` : `p|${sel.slot}`);
+const keyOf = (sel: NonNullable<Sel>) => (sel.kind === "item" ? `i|${sel.k}|${sel.id}` : sel.kind === "text" ? sel.key : `p|${sel.slot}`);
 /** Change the look of one thing; a look with nothing left in it is removed. */
 function restyle(l: Layout, key: string, fn: (s: Sty) => void) {
   const st = ((l.style ||= {})[key] ||= {});
@@ -34,8 +34,8 @@ function restyle(l: Layout, key: string, fn: (s: Sty) => void) {
   if (!Object.keys(st).length) delete l.style[key];
 }
 
-type Sel = { kind: "item"; k: string; id: string } | { kind: "pic"; slot: string } | null;
-type Kind = "photo" | "clip" | "section" | "pic";
+type Sel = { kind: "item"; k: string; id: string } | { kind: "pic"; slot: string } | { kind: "text"; key: string } | null;
+type Kind = "photo" | "clip" | "section" | "pic" | "text";
 interface Hit {
   sel: NonNullable<Sel>;
   el: HTMLElement;
@@ -44,7 +44,7 @@ interface Hit {
 type Drop = { how: "insert"; k: string; id: string; after: boolean; el: HTMLElement; flow: string } | { how: "append"; k: string; el: HTMLElement } | { how: "replace"; slot: string; el: HTMLElement };
 
 const esc = (s: string) => (typeof CSS !== "undefined" && CSS.escape ? CSS.escape(s) : s.replace(/["\\]/g, "\\$&"));
-const same = (a: Sel, b: Sel) => !!a && !!b && a.kind === b.kind && (a.kind === "item" ? a.k === (b as typeof a).k && a.id === (b as typeof a).id : a.slot === (b as typeof a).slot);
+const same = (a: Sel, b: Sel) => !!a && !!b && a.kind === b.kind && keyOf(a) === keyOf(b);
 const parse = (s?: string): SizeSpec | null => {
   try {
     return s ? (JSON.parse(s) as SizeSpec) : null;
@@ -54,6 +54,7 @@ const parse = (s?: string): SizeSpec | null => {
 };
 function elOf(sel: Sel): HTMLElement | null {
   if (!sel) return null;
+  if (sel.kind === "text") return document.querySelector<HTMLElement>(`[data-tk="${esc(sel.key)}"]`);
   return document.querySelector<HTMLElement>(sel.kind === "item" ? `[data-ed="item"][data-k="${esc(sel.k)}"][data-id="${esc(sel.id)}"]` : `img[data-ed="pic"][data-slot="${esc(sel.slot)}"]`);
 }
 const itemHit = (el: HTMLElement): Hit => ({ sel: { kind: "item", k: el.dataset.k!, id: el.dataset.id! }, el, type: el.dataset.type as Kind });
@@ -61,6 +62,8 @@ const itemHit = (el: HTMLElement): Hit => ({ sel: { kind: "item", k: el.dataset.
 function hitAt(x: number, y: number): Hit | null {
   const stack = document.elementsFromPoint(x, y) as HTMLElement[];
   if (!stack.length || stack[0].closest("[data-edit-ui]")) return null;
+  const words = stack[0].closest<HTMLElement>('[data-ed="text"]');
+  if (words) return { sel: { kind: "text", key: words.dataset.tk! }, el: words, type: "text" };
   const tile = stack[0].closest<HTMLElement>('[data-ed="item"]:not([data-type="section"])');
   if (tile) return itemHit(tile);
   const img = stack.find((e) => e.matches?.('img[data-ed="pic"]'));
@@ -139,6 +142,7 @@ export default function Editor() {
   const lineRef = useRef<HTMLDivElement>(null);
   const startDrag = useRef<(hit: Hit, x: number, y: number) => void>(() => {});
 
+  const typeIn = useRef<(el: HTMLElement, key: string) => void>(() => {});
   const flash = useCallback((t: string) => {
     setNote(t);
     setTimeout(() => setNote((n) => (n === t ? "" : n)), 6000);
@@ -155,13 +159,13 @@ export default function Editor() {
     if (el && sel) {
       const d = el.dataset;
       const ids = sel.kind === "item" ? lists.current[sel.k] || [] : [];
-      const type = (sel.kind === "pic" ? "pic" : d.type) as Kind;
+      const type = (sel.kind === "pic" ? "pic" : sel.kind === "text" ? "text" : d.type) as Kind;
       next = {
         type,
         k: d.k,
         id: d.id,
         flow: d.flow || "x",
-        label: d.label || (type === "clip" ? "Video" : type === "section" ? "Section" : "Photo"),
+        label: d.label || (type === "clip" ? "Video" : type === "section" ? "Section" : type === "text" ? (el.matches("a") ? "Button" : /^H/.test(el.tagName) ? "Heading" : "Text") : "Photo"),
         size: parse(d.size) || parse(slotOf(el)?.dataset.size),
         group: parse(d.group),
         slot: slotOf(el)?.dataset.slot || "",
@@ -275,6 +279,12 @@ export default function Editor() {
       return null;
     };
     const begin = (hit: Hit, x: number, y: number) => {
+      if (hit.type === "text" && !LRef.current.style?.[keyOf(hit.sel)]?.free?.[dev()]) {
+        // words have no row to be reordered in, so dragging them always places them freely
+        const d = dev();
+        change((l) => restyle(l, keyOf(hit.sel), (st) => ((st.free ||= {})[d] = { x: 0, y: 0, s: 1 })));
+        return beginFree(hit, x, y);
+      }
       if (hit.el.dataset.free !== undefined) return beginFree(hit, x, y); // free-moved things go wherever you drag them
       drag = { hit, drop: null, x, y };
       press = null;
@@ -336,7 +346,7 @@ export default function Editor() {
 
     const down = (e: PointerEvent) => {
       const t = e.target as HTMLElement;
-      if (e.button || t.closest?.("[data-edit-ui]")) return;
+      if (e.button || t.closest?.("[data-edit-ui]") || t.closest?.("[contenteditable]")) return;
       const hit = hitAt(e.clientX, e.clientY);
       if (!hit) return;
       if (reframeRef.current && same(hit.sel, selRef.current)) {
@@ -414,10 +424,12 @@ export default function Editor() {
       if (t.closest?.("[data-edit-ui]")) return;
       e.preventDefault();
       e.stopPropagation();
+      if (t.closest?.("[contenteditable]")) return;
       if (swallow) return void (swallow = false);
       const hit = hitAt(e.clientX, e.clientY);
       select(hit ? hit.sel : null);
-      if (hit && e.detail === 2 && slotOf(hit.el)) setReframe(true);
+      if (hit && e.detail === 2 && hit.type === "text") typeIn.current(hit.el, keyOf(hit.sel));
+      else if (hit && e.detail === 2 && slotOf(hit.el)) setReframe(true);
     };
     const key = (e: KeyboardEvent) => {
       const typing = (e.target as HTMLElement)?.closest?.("input,textarea,select");
@@ -462,6 +474,38 @@ export default function Editor() {
     );
 
   const hidden = Object.entries(L.hidden || {}).flatMap(([k, ids]) => ids.map((id) => ({ k, id })));
+  const hiddenWords = Object.entries(L.style || {}).filter(([, st]) => st.hide).map(([k]) => k);
+  /* Type straight into a piece of text. Enter or clicking away keeps it, Esc puts it back. */
+  typeIn.current = (el, key) => {
+    if (el.isContentEditable) return;
+    if (el.querySelector("svg,img")) return flash("This one has an icon inside it, so it can't be typed in here. Tell Claude what it should say.");
+    const before = el.textContent || "";
+    // the page's own pieces of this text, kept so they can be put back exactly (typing may remove or merge them)
+    const kids = Array.from(el.childNodes).map((n) => [n, n.textContent] as const);
+    let cancelled = false;
+    el.contentEditable = "true";
+    el.focus();
+    getSelection()?.selectAllChildren(el);
+    const keys = (e: KeyboardEvent) => {
+      if (e.key === "Escape") cancelled = true;
+      if (e.key === "Escape" || (e.key === "Enter" && !e.shiftKey)) {
+        e.preventDefault();
+        e.stopPropagation();
+        el.blur();
+      }
+    };
+    const done = () => {
+      el.removeEventListener("blur", done);
+      el.removeEventListener("keydown", keys);
+      el.removeAttribute("contenteditable");
+      getSelection()?.removeAllRanges();
+      const now = (el.textContent || "").replace(/\s+/g, " ").trim();
+      el.replaceChildren(...kids.map(([n, t]) => ((n.textContent = t), n))); // put the page back as it was; the saved change below redraws it properly
+      if (!cancelled && now && now !== before) change((l) => restyle(l, key, (st) => (st.text = now === (wordsBefore(el) ?? before) && wordsBefore(el) !== undefined ? undefined : now)));
+    };
+    el.addEventListener("blur", done);
+    el.addEventListener("keydown", keys);
+  };
   const sections = Array.from(document.querySelectorAll<HTMLElement>('[data-ed="item"][data-type="section"]')).map((e) => ({ k: e.dataset.k!, id: e.dataset.id!, label: e.dataset.label || e.dataset.id! }));
   const ups = new Set(JSON.stringify(L).match(/up:[a-z0-9]+/g) || []).size;
   const save = async () => {
@@ -502,6 +546,11 @@ export default function Editor() {
     if (v) setSize(spec, v);
   };
   const hide = () => {
+    if (sel?.kind === "text") {
+      change((l) => restyle(l, sel.key, (st) => (st.hide = true)));
+      setSel(null);
+      return flash("Hidden. Bring it back from “Hidden” in the bar below, or press Undo.");
+    }
     if (sel?.kind !== "item") return;
     change((l) => {
       const h = ((l.hidden ||= {})[sel.k] ||= []);
@@ -569,6 +618,37 @@ export default function Editor() {
   };
 
   const freeHere = info ? L.style?.[info.key]?.free?.[dev()] : undefined;
+  const boxHere = info ? L.style?.[info.key]?.box?.[dev()] : undefined;
+  const photo = info?.type === "pic" || info?.type === "photo";
+  /* Pull a photo's edge or corner to any width and height. It fills the frame you make, cropping rather than stretching. */
+  const stretch = (e: RPointerEvent<HTMLDivElement>, side: "w" | "h" | "wh") => {
+    const el = elOf(sel);
+    if (!el || !info) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const h = e.currentTarget;
+    h.setPointerCapture(e.pointerId);
+    const d = dev();
+    const key = info.key;
+    const r = el.getBoundingClientRect();
+    const k = freeHere?.s || 1;
+    const x0 = e.clientX;
+    const y0 = e.clientY;
+    const tag = "box" + Date.now();
+    const mv = (ev: PointerEvent) => {
+      const w = side === "h" ? undefined : Math.max(40, Math.round((r.width + ev.clientX - x0) / k));
+      const hh = side === "w" ? undefined : Math.max(40, Math.round((r.height + ev.clientY - y0) / k));
+      change((l) => restyle(l, key, (st) => { const b = ((st.box ||= {})[d] ||= {}); if (w) b.w = w; if (hh) b.h = hh; }), tag);
+    };
+    const done = () => {
+      h.removeEventListener("pointermove", mv);
+      h.removeEventListener("pointerup", done);
+      h.removeEventListener("pointercancel", done);
+    };
+    h.addEventListener("pointermove", mv);
+    h.addEventListener("pointerup", done);
+    h.addEventListener("pointercancel", done);
+  };
   const toggleFree = () => {
     if (!info) return;
     const d = dev();
@@ -602,11 +682,15 @@ export default function Editor() {
     ? "Click a photo, video or section to select it. Drag photos and videos to move them, even into another section."
     : reframe
       ? "Drag the photo inside its frame to choose what shows. Press Reframe again (or Esc) when it looks right."
-      : freeHere
+      : info?.type === "text"
+        ? "Drag these words anywhere. Double-click to change what they say. The Design panel sets size, alignment and color."
+        : freeHere
         ? `Free move is on for ${DEV_NAME[dev()]} screens: drag it anywhere, pull the corner to scale. Press Free move again to snap it back.`
         : info?.type === "section"
         ? "Use the ⠿ handle to drag this section up or down, or the arrows."
-        : "Drag it to a new spot. Pull the blue corner to resize. Double-click a photo to reframe it.";
+        : photo
+          ? "Drag it to a new spot. Pull the blue edges or corner to make it any width and height. Double-click to choose what part shows."
+          : "Drag it to a new spot. Pull the blue corner to resize.";
 
   return (
     <>
@@ -614,7 +698,13 @@ export default function Editor() {
       {sel && info ? (
         <>
           <div ref={boxRef} className="pointer-events-none fixed z-[58] hidden outline outline-2 outline-sky-500" style={{ display: "none" }}>
-            {info.size || freeHere ? (
+            {photo ? (
+              <>
+                <div data-edit-ui onPointerDown={(e) => stretch(e, "w")} title="Drag to change the width" className="pointer-events-auto absolute top-1/2 -right-1.5 h-9 w-3 -translate-y-1/2 cursor-ew-resize touch-none rounded-full border-2 border-white bg-sky-500 shadow" />
+                <div data-edit-ui onPointerDown={(e) => stretch(e, "h")} title="Drag to change the height" className="pointer-events-auto absolute -bottom-1.5 left-1/2 h-3 w-9 -translate-x-1/2 cursor-ns-resize touch-none rounded-full border-2 border-white bg-sky-500 shadow" />
+                <div data-edit-ui onPointerDown={(e) => stretch(e, "wh")} title="Drag to resize" className="pointer-events-auto absolute -right-2 -bottom-2 size-5 cursor-nwse-resize touch-none rounded-sm border-2 border-white bg-sky-500 shadow" />
+              </>
+            ) : info.size || freeHere ? (
               <div data-edit-ui onPointerDown={resizeDown} title={freeHere ? "Drag to scale" : `Drag to resize (${SIZE_NAME[info.size!.v] || info.size!.v})`} className="pointer-events-auto absolute -right-2 -bottom-2 size-5 cursor-nwse-resize touch-none rounded-sm border-2 border-white bg-sky-500 shadow" />
             ) : null}
           </div>
@@ -673,7 +763,24 @@ export default function Editor() {
                 + Photo
               </button>
             ) : null}
-            {sel.kind === "item" ? (
+            {sel.kind === "text" ? (
+              <button
+                type="button"
+                className={tool}
+                onClick={() => {
+                  const el = elOf(sel);
+                  if (el) typeIn.current(el, sel.key);
+                }}
+              >
+                Edit text
+              </button>
+            ) : null}
+            {boxHere ? (
+              <button type="button" className={tool} title="Back to its designed size" onClick={() => change((l) => restyle(l, info.key, (st) => { if (st.box) { delete st.box[dev()]; if (!Object.keys(st.box).length) delete st.box; } }))}>
+                Auto size
+              </button>
+            ) : null}
+            {sel.kind === "item" || sel.kind === "text" ? (
               <button type="button" className={tool} aria-label="Hide" title="Hide" onClick={hide}>
                 ✕
               </button>
@@ -715,9 +822,9 @@ export default function Editor() {
               Sections
             </button>
           ) : null}
-          {hidden.length ? (
+          {hidden.length + hiddenWords.length ? (
             <button type="button" className={cn(btn, panel === "hidden" ? "bg-sky-500" : "bg-white/10 hover:bg-white/20")} aria-expanded={panel === "hidden"} onClick={() => setPanel(panel === "hidden" ? "" : "hidden")}>
-              Hidden ({hidden.length})
+              Hidden ({hidden.length + hiddenWords.length})
             </button>
           ) : null}
           <button type="button" className={cn(btn, design ? "bg-sky-500" : "bg-white/10 hover:bg-white/20")} aria-pressed={design} onClick={() => setDesign(!design)}>
@@ -818,8 +925,13 @@ export default function Editor() {
             })}
           </ol>
         ) : null}
-        {panel === "hidden" && hidden.length ? (
+        {panel === "hidden" && hidden.length + hiddenWords.length ? (
           <div className="mt-2 flex flex-wrap gap-1.5 border-t border-white/15 px-1 pt-2">
+            {hiddenWords.map((k) => (
+              <button key={k} type="button" className="inline-flex max-w-xs items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs hover:bg-white/20" onClick={() => change((l) => restyle(l, k, (st) => delete st.hide))}>
+                <span className="truncate">Show text “{(document.querySelector(`[data-tk="${esc(k)}"]`)?.textContent || k).slice(0, 40)}” again</span>
+              </button>
+            ))}
             {hidden.map((h) => (
               <button
                 key={h.k + h.id}
@@ -952,7 +1064,7 @@ function Panel({ info, L, change }: { info: Info; L: Layout; change: (fn: (l: La
   const ang = Number(own.fill?.match(/(-?\d+)deg/)?.[1] ?? 180);
   const kind = !own.fill ? "" : hex.length > 1 ? "g" : "c";
   const fill = (k: string, c1 = hex[0] || "#e9dfd0", c2 = hex[1] || "#f6f1ea", a = ang) => set(info.key, (s) => (s.fill = k === "" ? undefined : k === "c" ? c1 : `linear-gradient(${a}deg, ${c1}, ${c2})`), "fill" + k);
-  const touched = (pic && Object.keys(pic).length > 0) || Object.keys(own).some((k) => k !== "free");
+  const touched = (pic && info.picKey !== info.key && Object.keys(pic).length > 0) || Object.keys(own).some((k) => k !== "free" && k !== "box" && k !== "text");
   return (
     <aside data-edit-ui data-panel style={ui} className="fixed top-20 right-2 z-[61] max-h-[calc(100dvh-13rem)] w-[17.5rem] max-w-[calc(100vw-16px)] overflow-y-auto rounded-xl bg-neutral-900/95 text-white shadow-2xl backdrop-blur">
       <button type="button" className="flex w-full items-center justify-between px-3 py-2.5 text-left text-[13px] font-semibold" aria-expanded={open} onClick={() => setOpen(!open)}>
@@ -976,6 +1088,7 @@ function Panel({ info, L, change }: { info: Info; L: Layout; change: (fn: (l: La
                   ))}
                 </select>
               </label>
+              <Slide label="Corners" v={pic.rad ?? 0} min={0} max={200} unit="px" onChange={(v, t) => set(info.picKey, (s) => (s.rad = v || undefined), t)} />
               <Chips label="Mask" v={pic.mask || ""} options={[["", "None"], ["round", "Rounded"], ["circle", "Circle"], ["arch", "Arch"]]} onChange={(v) => set(info.picKey, (s) => (s.mask = v || undefined))} />
               <label className="grid grid-cols-[5.5rem_1fr] items-center gap-2 text-[12px]">
                 <span className="text-white/85">Blend</span>
@@ -990,11 +1103,29 @@ function Panel({ info, L, change }: { info: Info; L: Layout; change: (fn: (l: La
               <p className="text-[11px] leading-snug text-white/50">To choose which part of the photo shows, double-click it and drag.</p>
             </Group>
           ) : null}
+          {info.type === "text" ? (
+            <Group title="Text">
+              <Slide label="Size" v={own.fs ?? 100} min={50} max={250} unit="%" onChange={(v, t) => set(info.key, (s) => (s.fs = v === 100 ? undefined : v), t)} />
+              <Chips label="Align" v={own.align || ""} options={[["", "Auto"], ["left", "Left"], ["center", "Center"], ["right", "Right"]]} onChange={(v) => set(info.key, (s) => (s.align = v || undefined))} />
+              <div className="grid grid-cols-[5.5rem_1fr] items-center gap-2 text-[12px]">
+                <span className="text-white/85">Color</span>
+                <span className="flex items-center gap-2">
+                  <input type="color" aria-label="Text color" value={own.color || "#1f1c19"} className="h-8 w-12 rounded bg-transparent" onChange={(e) => set(info.key, (s) => (s.color = e.target.value), "color")} />
+                  {own.color ? (
+                    <button type="button" className="h-7 rounded-md bg-white/10 px-2 text-[11px] font-semibold hover:bg-white/20" onClick={() => set(info.key, (s) => delete s.color)}>
+                      As designed
+                    </button>
+                  ) : null}
+                </span>
+              </div>
+              <p className="text-[11px] leading-snug text-white/50">Double-click the words on the page to change what they say.</p>
+            </Group>
+          ) : null}
           <Group title="Effects">
             <Chips label="Drop shadow" v={own.shadow || ""} options={LEVELS} onChange={(v) => set(info.key, (s) => (s.shadow = v || undefined))} />
-            {info.type !== "pic" ? <Chips label="Inner shadow" v={own.inner || ""} options={LEVELS} onChange={(v) => set(info.key, (s) => (s.inner = v || undefined))} /> : null}
+            {info.type !== "pic" && info.type !== "text" ? <Chips label="Inner shadow" v={own.inner || ""} options={LEVELS} onChange={(v) => set(info.key, (s) => (s.inner = v || undefined))} /> : null}
             <Slide label="Layer blur" v={own.blur ?? 0} min={0} max={24} unit="px" onChange={(v, t) => set(info.key, (s) => (s.blur = v || undefined), t)} />
-            <Slide label="Backgr. blur" v={own.bg ?? 0} min={0} max={30} unit="px" onChange={(v, t) => set(info.key, (s) => (s.bg = v || undefined), t)} />
+            {info.type !== "text" ? <Slide label="Backgr. blur" v={own.bg ?? 0} min={0} max={30} unit="px" onChange={(v, t) => set(info.key, (s) => (s.bg = v || undefined), t)} /> : null}
             <Slide label="Opacity" v={own.op ?? 100} min={10} max={100} unit="%" onChange={(v, t) => set(info.key, (s) => (s.op = v === 100 ? undefined : v), t)} />
             <p className="text-[11px] leading-snug text-white/50">Background blur shows on see-through things: lower the opacity and place it over something.</p>
           </Group>
@@ -1021,9 +1152,14 @@ function Panel({ info, L, change }: { info: Info; L: Layout; change: (fn: (l: La
                 onClick={() =>
                   change((l) => {
                     if (info.picKey && info.picKey !== info.key) delete l.style?.[info.picKey];
-                    const fr = l.style?.[info.key]?.free;
-                    if (l.style) {
-                      if (fr) l.style[info.key] = { free: fr };
+                    const cur = l.style?.[info.key];
+                    if (l.style && cur) {
+                      // position, size and wording are not "look": they have their own ways back
+                      const keep: Sty = {};
+                      if (cur.free) keep.free = cur.free;
+                      if (cur.box) keep.box = cur.box;
+                      if (cur.text != null) keep.text = cur.text;
+                      if (Object.keys(keep).length) l.style[info.key] = keep;
                       else delete l.style[info.key];
                     }
                   })
