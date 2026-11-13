@@ -169,3 +169,12 @@ textarea:-webkit-autofill {
   caret-color: var(--foreground);
   transition: background-color 9999s ease-out 0s;
 }
+
+/* Edit mode (preview links only): what you can pick up shows an outline as you point at it. */
+html.editing { user-select: none; -webkit-user-select: none; }
+html.editing input, html.editing textarea { user-select: text; -webkit-user-select: text; }
+html.editing img { -webkit-user-drag: none; }
+html.editing [data-ed="item"]:not([data-type="section"]), html.editing img[data-ed="pic"] { cursor: grab; }
+html.editing:not(.dragging) [data-ed="item"]:not([data-type="section"]):hover,
+html.editing:not(.dragging) img[data-ed="pic"]:hover { outline: 2px dashed rgb(14 165 233 / 0.9); outline-offset: 2px; }
+html.editing.dragging, html.editing.dragging * { cursor: grabbing !important; }

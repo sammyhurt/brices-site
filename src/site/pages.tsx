@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
-import { AddPhoto, Item, Pic, SizeChips, useArranged, useLayout, usePhotos, useSize } from "./edit";
+import { AddPhoto, Item, Pic, useArranged, useLayout, usePhotos, useSize } from "./edit";
 import { brand, couples, partnerships, pkg, quietLuxury, reach, socials, type Clip, type Partnership } from "./data";
 import { Hero } from "./hero";
 import { A, Display, Eyebrow, InstagramIcon, Reveal, Section, TikTokIcon, glassDark, media } from "./parts";
@@ -17,6 +17,9 @@ const btn = "font-label inline-flex h-12 items-center gap-2 rounded-full px-7 te
 
 /* ───────── Shared structure: kit-style title with a hairline rule, and a centered grid ───────── */
 const wrap = "mx-auto w-full max-w-7xl";
+/** Every video on the site by its still, so a video dragged into another row in edit mode can be found there. */
+const allClips = new Map<string, Clip>([...partnerships.flatMap((p) => p.clips), ...couples].map((c) => [c.img, c]));
+const SML = ["s", "m", "l"];
 function Title({ eyebrow, children, size, className, light }: { eyebrow?: string; children: string; size?: string; className?: string; light?: boolean }) {
   return (
     <div className={className}>
@@ -216,9 +219,11 @@ function PartnershipChapter({ p, i, first }: { p: Partnership; i: number; first?
   const flip = i % 2 === 1;
   const all = usePhotos(`photos:${p.slug}`, p.photos);
   const shown = all.slice(0, 6);
-  const clips = useArranged(`clips:${p.slug}`, p.clips, (c) => c.img);
+  const clips = useArranged(`clips:${p.slug}`, p.clips, (c) => c.img, allClips);
   const gridSize = useSize(`grid:${p.slug}`);
   const phoneSize = useSize(`phones:${p.slug}`);
+  const { L } = useLayout();
+  const big = (ph: string, k: number) => (L.size?.[`span:${p.slug}:${ph}`] || (k === 0 && gridSize !== "l" ? "l" : "s")) === "l";
   const title = `${p.name} partnership`;
   return (
     <section id={first ? "partnerships" : undefined} className={cn("scroll-mt-16 px-5 py-20 sm:px-8 lg:px-12 lg:py-28", i % 2 === 0 ? "bg-secondary" : "")}>
@@ -252,10 +257,17 @@ function PartnershipChapter({ p, i, first }: { p: Partnership; i: number; first?
           <div className="min-w-0 lg:col-span-5">
             <Title size="text-[clamp(1.7rem,3vw,2.5rem)]">Photo</Title>
             <div className="mt-8">
-              <SizeChips k={`grid:${p.slug}`} label="Photo size" />
               <div className={cn("grid gap-2 sm:gap-3", gridSize === "s" ? "grid-cols-4" : gridSize === "l" ? "grid-cols-2" : "grid-cols-3")}>
                 {shown.map((ph, k) => (
-                  <Item key={ph} k={`photos:${p.slug}`} id={ph} ids={all} className={cn(k === 0 && gridSize !== "l" && "col-span-2 row-span-2")}>
+                  <Item
+                    key={ph}
+                    k={`photos:${p.slug}`}
+                    id={ph}
+                    ids={all}
+                    size={{ k: `span:${p.slug}:${ph}`, v: big(ph, k) ? "l" : "s", o: ["s", "l"], label: "Photo" }}
+                    group={{ k: `grid:${p.slug}`, v: gridSize, o: SML, label: "Grid" }}
+                    className={cn(big(ph, k) && "col-span-2 row-span-2")}
+                  >
                     <button type="button" onClick={() => setOpen(k)} className="group block h-full w-full overflow-hidden rounded-sm" aria-label={`Open photo ${k + 1} of ${p.name}`}>
                       <Pic slot={`photo:${ph}`} name={ph} alt="" loading="lazy" className="aspect-[4/5] h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]" />
                     </button>
@@ -269,10 +281,9 @@ function PartnershipChapter({ p, i, first }: { p: Partnership; i: number; first?
             <Title size="text-[clamp(1.7rem,3vw,2.5rem)]">Video content</Title>
             {/* phones: swipe sideways, each video most of the screen wide; larger screens: three across */}
             <div className="mt-8">
-              <SizeChips k={`phones:${p.slug}`} label="Video size" />
               <div className={cn("-mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:gap-5 sm:overflow-visible sm:px-0 lg:gap-6", phoneSize === "s" ? "sm:grid-cols-4" : phoneSize === "l" ? "sm:grid-cols-2" : "sm:grid-cols-3")}>
                 {clips.map((c) => (
-                  <Item key={c.img} k={`clips:${p.slug}`} id={c.img} ids={clips.map((x) => x.img)} className="w-[64vw] max-w-[17rem] shrink-0 snap-center sm:w-auto sm:max-w-none">
+                  <Item key={c.img} k={`clips:${p.slug}`} id={c.img} ids={clips.map((x) => x.img)} type="clip" size={{ k: `phones:${p.slug}`, v: phoneSize, o: SML, label: "Videos" }} className="w-[64vw] max-w-[17rem] shrink-0 snap-center sm:w-auto sm:max-w-none">
                     <PhoneTile c={c} />
                   </Item>
                 ))}
@@ -322,7 +333,7 @@ function ClipTile({ c, className }: { c: Clip; className?: string }) {
 
 /* ───────── Couples content (slide 15) ───────── */
 function Couples() {
-  const list = useArranged("couples", couples, (c) => c.img);
+  const list = useArranged("couples", couples, (c) => c.img, allClips);
   const size = useSize("phones:couples");
   return (
     <Section id="couples">
@@ -331,10 +342,9 @@ function Couples() {
           <Title eyebrow="On our channels">Couples content</Title>
           <p className="text-muted-foreground max-w-sm">Travel, fashion and the two of us. Tap any video to watch it.</p>
         </Reveal>
-        <SizeChips k="phones:couples" label="Video size" />
         <div className={cn("-mx-5 flex snap-x snap-mandatory gap-5 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:overflow-visible sm:px-0", size === "s" ? "sm:grid-cols-4 lg:grid-cols-8" : size === "l" ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3 lg:grid-cols-6")}>
           {list.map((c, i) => (
-            <Item key={c.img} k="couples" id={c.img} ids={list.map((x) => x.img)} className="w-[64vw] max-w-[17rem] shrink-0 snap-center sm:w-auto sm:max-w-none">
+            <Item key={c.img} k="couples" id={c.img} ids={list.map((x) => x.img)} type="clip" size={{ k: "phones:couples", v: size, o: SML, label: "Videos" }} className="w-[64vw] max-w-[17rem] shrink-0 snap-center sm:w-auto sm:max-w-none">
               <Reveal delay={i * 0.05}>
                 <PhoneTile c={c} />
               </Reveal>
@@ -353,9 +363,9 @@ function Ideas() {
   return (
     <Section className="bg-secondary py-14 lg:py-24">
       <Reveal className={size === "s" ? "mx-auto w-full max-w-3xl" : size === "m" ? "mx-auto w-full max-w-5xl" : wrap}>
-        <SizeChips k="beach" fallback="l" label="Photo size" />
         <Pic
           slot="beach"
+          size={{ k: "beach", v: size, o: SML, label: "Photo" }}
           name="ideas-beach"
           focus="50% 62%"
           srcSet="/media/ideas-beach-sm.jpg 1000w, /media/ideas-beach.jpg 2000w"
@@ -552,7 +562,7 @@ export function Home() {
         const ci = chapters.indexOf(s);
         const p = ci >= 0 ? partnerships.find((x) => `p:${x.slug}` === s.id) : undefined;
         return (
-          <Item key={s.id} k="home" id={s.id} ids={ids} vertical label={s.label}>
+          <Item key={s.id} k="home" id={s.id} ids={ids} type="section" flow="y" label={s.label}>
             {p ? <PartnershipChapter p={p} i={ci} first={ci === 0} /> : s.id === "about" ? <About /> : s.id === "quiet" ? <QuietLuxury /> : s.id === "reach" ? <Reach /> : s.id === "couples" ? <Couples /> : s.id === "beach" ? <Ideas /> : s.id === "package" ? <Package /> : <Inquire />}
           </Item>
         );
@@ -608,7 +618,7 @@ export function PartnershipPage({ slug }: { slug: string }) {
 
 function PartnershipBody({ p, next, open, setOpen }: { p: Partnership; next: Partnership; open: number | null; setOpen: (f: number | null | ((o: number | null) => number | null)) => void }) {
   const photos = usePhotos(`photos:${p.slug}`, p.photos);
-  const clips = useArranged(`clips:${p.slug}`, p.clips, (c) => c.img);
+  const clips = useArranged(`clips:${p.slug}`, p.clips, (c) => c.img, allClips);
   return (
     <main>
       <section className="relative h-[82dvh] min-h-[32rem] bg-black">
@@ -639,7 +649,7 @@ function PartnershipBody({ p, next, open, setOpen }: { p: Partnership; next: Par
           </Reveal>
           <div className="-mx-5 flex min-w-0 snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 lg:col-span-7">
             {clips.map((c) => (
-              <Item key={c.img} k={`clips:${p.slug}`} id={c.img} ids={clips.map((x) => x.img)} className="w-[64vw] max-w-[17rem] shrink-0 snap-center sm:w-auto sm:max-w-none">
+              <Item key={c.img} k={`clips:${p.slug}`} id={c.img} ids={clips.map((x) => x.img)} type="clip" className="w-[64vw] max-w-[17rem] shrink-0 snap-center sm:w-auto sm:max-w-none">
                 <ClipTile c={c} />
               </Item>
             ))}
@@ -650,7 +660,7 @@ function PartnershipBody({ p, next, open, setOpen }: { p: Partnership; next: Par
         <Eyebrow className="mb-6">Photography · {photos.length} images</Eyebrow>
         <div className="columns-2 gap-3 md:columns-3 [&>*]:mb-3">
           {photos.map((ph, k) => (
-            <Item key={ph} k={`photos:${p.slug}`} id={ph} ids={photos} className="break-inside-avoid">
+            <Item key={ph} k={`photos:${p.slug}`} id={ph} ids={photos} flow="y" className="break-inside-avoid">
               <button type="button" className="group block w-full overflow-hidden rounded-sm" onClick={() => setOpen(k)} aria-label={`Open photo ${k + 1}`}>
                 <img src={media(ph)} alt="" loading="lazy" className="w-full transition-transform duration-700 group-hover:scale-[1.03]" />
               </button>
