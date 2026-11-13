@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
-import { brand, couples, ideas, partnerships, pkg, quietLuxury, reach, socials, type Clip, type Partnership } from "./data";
+import { brand, couples, partnerships, pkg, quietLuxury, reach, socials, type Clip, type Partnership } from "./data";
 import { Hero } from "./hero";
 import { A, Display, Eyebrow, InstagramIcon, Reveal, Section, TikTokIcon, glassDark, media } from "./parts";
 import { useNumbers } from "./stats";
@@ -329,25 +329,12 @@ function Couples() {
 
 /* ───────── Ideas to film (slide 16) ───────── */
 function Ideas() {
+  // Just the beach photo. It is shown at a modest width because the file from the media kit is small (542 px wide).
   return (
     <Section className="bg-secondary">
-      <div className={cn(wrap, "grid items-center gap-12 lg:grid-cols-12 lg:gap-16")}>
-        <Reveal className="lg:col-span-7">
-          <Title eyebrow="For your property">Ideas to film</Title>
-          <ol className="mt-10">
-            {ideas.map((it) => (
-              <li key={it.n} className="border-foreground/15 grid gap-1 border-b py-5 first:pt-0 sm:grid-cols-[3rem_13rem_1fr] sm:gap-5">
-                <span className="font-label text-ink pt-1 text-xs tabular-nums">{it.n}</span>
-                <span className="text-lg tracking-[0.03em] uppercase">{it.title}</span>
-                <span className="text-muted-foreground">{it.body}</span>
-              </li>
-            ))}
-          </ol>
-        </Reveal>
-        <Reveal delay={0.1} className="lg:col-span-5">
-          <img src={media("ideas-beach")} alt="A beach with rows of umbrellas from above" loading="lazy" className="aspect-[3/2] w-full rounded-sm object-cover" />
-        </Reveal>
-      </div>
+      <Reveal className="mx-auto w-full max-w-3xl">
+        <img src={media("ideas-beach")} alt="A beach with rows of umbrellas from above" loading="lazy" width={542} height={360} className="aspect-[3/2] w-full rounded-sm object-cover" />
+      </Reveal>
     </Section>
   );
 }
