@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
+import { AddPhoto, Item, Pic, SizeChips, useArranged, useLayout, usePhotos, useSize } from "./edit";
 import { brand, couples, partnerships, pkg, quietLuxury, reach, socials, type Clip, type Partnership } from "./data";
 import { Hero } from "./hero";
 import { A, Display, Eyebrow, InstagramIcon, Reveal, Section, TikTokIcon, glassDark, media } from "./parts";
@@ -44,9 +45,9 @@ function About() {
           </div>
         </Reveal>
         <Reveal delay={0.1} className="grid grid-cols-[1.15fr_1fr] gap-3 lg:col-span-7">
-          <img src={media("about-pool")} alt="Meredith and Bernie at an infinity pool at sunset" loading="lazy" className="row-span-2 h-full w-full rounded-sm object-cover" />
-          <img src={media("about-balcony")} alt="Meredith and Bernie on a balcony" loading="lazy" className="aspect-[4/5] w-full rounded-sm object-cover" />
-          <img src={media("about-street")} alt="Meredith and Bernie walking in New York" loading="lazy" className="aspect-[4/5] w-full rounded-sm object-cover" />
+          <Pic slot="about-1" name="about-pool" alt="Meredith and Bernie at an infinity pool at sunset" loading="lazy" className="row-span-2 h-full w-full rounded-sm object-cover" />
+          <Pic slot="about-2" name="about-balcony" alt="Meredith and Bernie on a balcony" loading="lazy" className="aspect-[4/5] w-full rounded-sm object-cover" />
+          <Pic slot="about-3" name="about-street" alt="Meredith and Bernie walking in New York" loading="lazy" className="aspect-[4/5] w-full rounded-sm object-cover" />
         </Reveal>
       </div>
     </Section>
@@ -70,7 +71,7 @@ function QuietLuxury() {
           </ol>
         </Reveal>
         <Reveal delay={0.1} className="lg:col-span-6">
-          <img src={media("quiet-window")} alt="A cabin window looking out over a pond and pine trees" loading="lazy" className="aspect-[3/2] w-full rounded-sm object-cover" />
+          <Pic slot="quiet" name="quiet-window" alt="A cabin window looking out over a pond and pine trees" loading="lazy" className="aspect-[3/2] w-full rounded-sm object-cover" />
         </Reveal>
       </div>
     </Section>
@@ -181,7 +182,7 @@ function PhoneTile({ c }: { c: Clip }) {
   const { onClick, player, playable } = useClipPlayer(c);
   const screen = (
     <span className="relative block aspect-[9/19] overflow-hidden rounded-[1.6rem] bg-black">
-      <img src={media(c.img)} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]" />
+      <Pic slot={`clip:${c.img}`} name={c.img} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]" />
       <span className="absolute top-2 left-1/2 h-4 w-14 -translate-x-1/2 rounded-full bg-black" />
       {playable ? <PlayBadge /> : null}
       {c.href ? (
@@ -213,7 +214,11 @@ function PhoneTile({ c }: { c: Clip }) {
 function PartnershipChapter({ p, i, first }: { p: Partnership; i: number; first?: boolean }) {
   const [open, setOpen] = useState<number | null>(null);
   const flip = i % 2 === 1;
-  const shown = p.photos.slice(0, 6);
+  const all = usePhotos(`photos:${p.slug}`, p.photos);
+  const shown = all.slice(0, 6);
+  const clips = useArranged(`clips:${p.slug}`, p.clips, (c) => c.img);
+  const gridSize = useSize(`grid:${p.slug}`);
+  const phoneSize = useSize(`phones:${p.slug}`);
   const title = `${p.name} partnership`;
   return (
     <section id={first ? "partnerships" : undefined} className={cn("scroll-mt-16 px-5 py-20 sm:px-8 lg:px-12 lg:py-28", i % 2 === 0 ? "bg-secondary" : "")}>
@@ -221,7 +226,7 @@ function PartnershipChapter({ p, i, first }: { p: Partnership; i: number; first?
         {first ? <Eyebrow className="mb-10">Past partnerships</Eyebrow> : null}
         <div className="grid items-center gap-10 lg:grid-cols-12 lg:gap-16">
           <Reveal className={cn("lg:col-span-6", flip && "lg:order-2")}>
-            <img src={media(p.cover)} alt={`${p.name}, ${p.place}`} loading="lazy" className="aspect-[4/5] w-full rounded-sm object-cover lg:aspect-[5/6]" />
+            <Pic slot={`cover:${p.slug}`} name={p.cover} alt={`${p.name}, ${p.place}`} loading="lazy" className="aspect-[4/5] w-full rounded-sm object-cover lg:aspect-[5/6]" />
           </Reveal>
           <Reveal delay={0.1} className="lg:col-span-6">
             <p className="font-label text-ink text-[11px] tracking-[0.24em] uppercase">
@@ -246,23 +251,32 @@ function PartnershipChapter({ p, i, first }: { p: Partnership; i: number; first?
         <div className="mt-20 grid gap-14 lg:grid-cols-12 lg:gap-16">
           <div className="min-w-0 lg:col-span-5">
             <Title size="text-[clamp(1.7rem,3vw,2.5rem)]">Photo</Title>
-            <div className="mt-8 grid grid-cols-3 gap-2 sm:gap-3">
-              {shown.map((ph, k) => (
-                <button key={ph} type="button" onClick={() => setOpen(k)} className={cn("group overflow-hidden rounded-sm", k === 0 && "col-span-2 row-span-2")} aria-label={`Open photo ${k + 1} of ${p.name}`}>
-                  <img src={media(ph)} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04] aspect-[4/5]" />
-                </button>
-              ))}
+            <div className="mt-8">
+              <SizeChips k={`grid:${p.slug}`} label="Photo size" />
+              <div className={cn("grid gap-2 sm:gap-3", gridSize === "s" ? "grid-cols-4" : gridSize === "l" ? "grid-cols-2" : "grid-cols-3")}>
+                {shown.map((ph, k) => (
+                  <Item key={ph} k={`photos:${p.slug}`} id={ph} ids={all} className={cn(k === 0 && gridSize !== "l" && "col-span-2 row-span-2")}>
+                    <button type="button" onClick={() => setOpen(k)} className="group block h-full w-full overflow-hidden rounded-sm" aria-label={`Open photo ${k + 1} of ${p.name}`}>
+                      <Pic slot={`photo:${ph}`} name={ph} alt="" loading="lazy" className="aspect-[4/5] h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]" />
+                    </button>
+                  </Item>
+                ))}
+                <AddPhoto k={`photos:${p.slug}`} />
+              </div>
             </div>
           </div>
           <div className="min-w-0 lg:col-span-7">
             <Title size="text-[clamp(1.7rem,3vw,2.5rem)]">Video content</Title>
             {/* phones: swipe sideways, each video most of the screen wide; larger screens: three across */}
-            <div className="-mx-5 mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-5 sm:overflow-visible sm:px-0 lg:gap-6">
-              {p.clips.map((c) => (
-                <div key={c.title} className="w-[64vw] max-w-[17rem] shrink-0 snap-center sm:w-auto sm:max-w-none">
-                  <PhoneTile c={c} />
-                </div>
-              ))}
+            <div className="mt-8">
+              <SizeChips k={`phones:${p.slug}`} label="Video size" />
+              <div className={cn("-mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:gap-5 sm:overflow-visible sm:px-0 lg:gap-6", phoneSize === "s" ? "sm:grid-cols-4" : phoneSize === "l" ? "sm:grid-cols-2" : "sm:grid-cols-3")}>
+                {clips.map((c) => (
+                  <Item key={c.img} k={`clips:${p.slug}`} id={c.img} ids={clips.map((x) => x.img)} className="w-[64vw] max-w-[17rem] shrink-0 snap-center sm:w-auto sm:max-w-none">
+                    <PhoneTile c={c} />
+                  </Item>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -279,7 +293,7 @@ function ClipTile({ c, className }: { c: Clip; className?: string }) {
   const { onClick, player, playable } = useClipPlayer(c);
   const inner = (
     <>
-      <img src={media(c.img)} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]" />
+      <Pic slot={`clip:${c.img}`} name={c.img} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-black/0" />
       {playable ? <PlayBadge /> : null}
       {c.href ? (
@@ -308,6 +322,8 @@ function ClipTile({ c, className }: { c: Clip; className?: string }) {
 
 /* ───────── Couples content (slide 15) ───────── */
 function Couples() {
+  const list = useArranged("couples", couples, (c) => c.img);
+  const size = useSize("phones:couples");
   return (
     <Section id="couples">
       <div className={wrap}>
@@ -315,11 +331,14 @@ function Couples() {
           <Title eyebrow="On our channels">Couples content</Title>
           <p className="text-muted-foreground max-w-sm">Travel, fashion and the two of us. Tap any video to watch it.</p>
         </Reveal>
-        <div className="-mx-5 flex snap-x snap-mandatory gap-5 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 lg:grid-cols-6">
-          {couples.map((c, i) => (
-            <Reveal key={c.title} delay={i * 0.05} className="w-[64vw] max-w-[17rem] shrink-0 snap-center sm:w-auto sm:max-w-none">
-              <PhoneTile c={c} />
-            </Reveal>
+        <SizeChips k="phones:couples" label="Video size" />
+        <div className={cn("-mx-5 flex snap-x snap-mandatory gap-5 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:overflow-visible sm:px-0", size === "s" ? "sm:grid-cols-4 lg:grid-cols-8" : size === "l" ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3 lg:grid-cols-6")}>
+          {list.map((c, i) => (
+            <Item key={c.img} k="couples" id={c.img} ids={list.map((x) => x.img)} className="w-[64vw] max-w-[17rem] shrink-0 snap-center sm:w-auto sm:max-w-none">
+              <Reveal delay={i * 0.05}>
+                <PhoneTile c={c} />
+              </Reveal>
+            </Item>
           ))}
         </div>
       </div>
@@ -330,18 +349,22 @@ function Couples() {
 /* ───────── Ideas to film (slide 16) ───────── */
 function Ideas() {
   // Just the beach photo, as wide as the rest of the page's content: the whole photo on phones, a wide cut on larger screens.
+  const size = useSize("beach", "l");
   return (
     <Section className="bg-secondary py-14 lg:py-24">
-      <Reveal className={wrap}>
-        <img
-          src={media("ideas-beach")}
+      <Reveal className={size === "s" ? "mx-auto w-full max-w-3xl" : size === "m" ? "mx-auto w-full max-w-5xl" : wrap}>
+        <SizeChips k="beach" fallback="l" label="Photo size" />
+        <Pic
+          slot="beach"
+          name="ideas-beach"
+          focus="50% 62%"
           srcSet="/media/ideas-beach-sm.jpg 1000w, /media/ideas-beach.jpg 2000w"
           sizes="(min-width: 1376px) 1280px, 94vw"
           alt="A beach cove from above: rows of straw umbrellas along clear blue water"
           loading="lazy"
           width={2000}
           height={1326}
-          className="aspect-[3/2] w-full rounded-sm object-cover object-[50%_62%] sm:aspect-[16/9]"
+          className="aspect-[3/2] w-full rounded-sm object-cover sm:aspect-[16/9]"
         />
       </Reveal>
     </Section>
@@ -432,7 +455,7 @@ function Inquire() {
     <section id="inquire" className="bg-secondary scroll-mt-16">
       <div className="grid lg:grid-cols-12">
         <div className="relative h-[30rem] sm:h-[36rem] lg:order-2 lg:col-span-5 lg:h-auto">
-          <img src={media("closing-doorway")} alt="Meredith and Bernie in front of an old wooden doorway, both dressed in white" loading="lazy" className="absolute inset-0 h-full w-full object-cover object-[50%_44%]" />
+          <Pic slot="closing" name="closing-doorway" focus="50% 44%" alt="Meredith and Bernie in front of an old wooden doorway, both dressed in white" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
         </div>
         <div className="px-5 py-20 sm:px-8 lg:col-span-7 lg:px-16 lg:py-28">
           <Reveal>
@@ -506,20 +529,34 @@ function Inquire() {
   );
 }
 
+/** The home page sections, in their default order. Edit mode can reorder or hide them (the hero always stays first). */
+const SECTIONS: { id: string; label: string }[] = [
+  { id: "about", label: "About us" },
+  { id: "quiet", label: "Quiet luxury" },
+  { id: "reach", label: "Our reach" },
+  ...partnerships.map((p) => ({ id: `p:${p.slug}`, label: p.name })),
+  { id: "couples", label: "Couples content" },
+  { id: "beach", label: "Beach photo" },
+  { id: "package", label: "The package" },
+  { id: "inquire", label: "Let's plan" },
+];
+
 export function Home() {
+  const list = useArranged("home", SECTIONS, (s) => s.id);
+  const ids = list.map((s) => s.id);
+  const chapters = list.filter((s) => s.id.startsWith("p:"));
   return (
     <main>
       <Hero />
-      <About />
-      <QuietLuxury />
-      <Reach />
-      {partnerships.map((p, i) => (
-        <PartnershipChapter key={p.slug} p={p} i={i} first={i === 0} />
-      ))}
-      <Couples />
-      <Ideas />
-      <Package />
-      <Inquire />
+      {list.map((s) => {
+        const ci = chapters.indexOf(s);
+        const p = ci >= 0 ? partnerships.find((x) => `p:${x.slug}` === s.id) : undefined;
+        return (
+          <Item key={s.id} k="home" id={s.id} ids={ids} vertical label={s.label}>
+            {p ? <PartnershipChapter p={p} i={ci} first={ci === 0} /> : s.id === "about" ? <About /> : s.id === "quiet" ? <QuietLuxury /> : s.id === "reach" ? <Reach /> : s.id === "couples" ? <Couples /> : s.id === "beach" ? <Ideas /> : s.id === "package" ? <Package /> : <Inquire />}
+          </Item>
+        );
+      })}
     </main>
   );
 }
@@ -566,10 +603,16 @@ export function PartnershipPage({ slug }: { slug: string }) {
   if (i < 0) return <NotFound />;
   const p = partnerships[i];
   const next = partnerships[(i + 1) % partnerships.length];
+  return <PartnershipBody p={p} next={next} open={open} setOpen={setOpen} />;
+}
+
+function PartnershipBody({ p, next, open, setOpen }: { p: Partnership; next: Partnership; open: number | null; setOpen: (f: number | null | ((o: number | null) => number | null)) => void }) {
+  const photos = usePhotos(`photos:${p.slug}`, p.photos);
+  const clips = useArranged(`clips:${p.slug}`, p.clips, (c) => c.img);
   return (
     <main>
       <section className="relative h-[82dvh] min-h-[32rem] bg-black">
-        <img src={media(p.hero || p.cover)} alt={`${p.name}, ${p.place}`} className="absolute inset-0 h-full w-full object-cover opacity-85" style={{ objectPosition: p.focus || "50% 50%" }} />
+        <Pic slot={`hero:${p.slug}`} name={p.hero || p.cover} focus={p.focus || "50% 50%"} alt={`${p.name}, ${p.place}`} className="absolute inset-0 h-full w-full object-cover opacity-85" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/30" />
         <div className="absolute inset-x-0 bottom-0 px-5 pb-12 text-white sm:px-8 lg:px-12">
           <A to="/#partnerships" className={cn(glassDark, "font-label mb-8 inline-flex items-center gap-2 rounded-full px-4 py-2 text-[11px] tracking-[0.24em] uppercase hover:bg-white/20")}>
@@ -595,24 +638,29 @@ export function PartnershipPage({ slug }: { slug: string }) {
             ) : null}
           </Reveal>
           <div className="-mx-5 flex min-w-0 snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 lg:col-span-7">
-            {p.clips.map((c) => (
-              <ClipTile key={c.title} c={c} className="w-[64vw] max-w-[17rem] shrink-0 snap-center sm:w-auto sm:max-w-none" />
+            {clips.map((c) => (
+              <Item key={c.img} k={`clips:${p.slug}`} id={c.img} ids={clips.map((x) => x.img)} className="w-[64vw] max-w-[17rem] shrink-0 snap-center sm:w-auto sm:max-w-none">
+                <ClipTile c={c} />
+              </Item>
             ))}
           </div>
         </div>
       </Section>
       <section className="px-5 pb-20 sm:px-8 lg:px-12 lg:pb-32">
-        <Eyebrow className="mb-6">Photography · {p.photos.length} images</Eyebrow>
+        <Eyebrow className="mb-6">Photography · {photos.length} images</Eyebrow>
         <div className="columns-2 gap-3 md:columns-3 [&>*]:mb-3">
-          {p.photos.map((ph, k) => (
-            <button key={ph} type="button" className="group block w-full overflow-hidden rounded-sm" onClick={() => setOpen(k)} aria-label={`Open photo ${k + 1}`}>
-              <img src={media(ph)} alt="" loading="lazy" className="w-full transition-transform duration-700 group-hover:scale-[1.03]" />
-            </button>
+          {photos.map((ph, k) => (
+            <Item key={ph} k={`photos:${p.slug}`} id={ph} ids={photos} className="break-inside-avoid">
+              <button type="button" className="group block w-full overflow-hidden rounded-sm" onClick={() => setOpen(k)} aria-label={`Open photo ${k + 1}`}>
+                <img src={media(ph)} alt="" loading="lazy" className="w-full transition-transform duration-700 group-hover:scale-[1.03]" />
+              </button>
+            </Item>
           ))}
+          <AddPhoto k={`photos:${p.slug}`} className="w-full" />
         </div>
       </section>
       <A to={`/partnerships/${next.slug}`} className="bg-foreground text-background group relative block overflow-hidden">
-        <img src={media(next.hero || next.cover)} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-35 transition-opacity group-hover:opacity-50" style={{ objectPosition: next.band || next.focus || "50% 50%" }} />
+        <Pic slot={`band:${next.slug}`} name={next.hero || next.cover} focus={next.band || next.focus || "50% 50%"} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-35 transition-opacity group-hover:opacity-50" />
         <div className="relative px-5 py-20 sm:px-8 lg:px-12">
           <p className="font-label text-[11px] tracking-[0.28em] uppercase opacity-75">Next partnership</p>
           <p className="mt-3 inline-flex items-center gap-4 text-[clamp(2rem,5vw,4rem)] font-light tracking-[0.06em] uppercase">
@@ -623,7 +671,7 @@ export function PartnershipPage({ slug }: { slug: string }) {
       <Inquire />
       <AnimatePresence>
         {open !== null ? (
-          <Lightbox photos={p.photos} at={open} label={p.name} onClose={() => setOpen(null)} onMove={(d) => setOpen((o) => (o === null ? o : (o + d + p.photos.length) % p.photos.length))} />
+          <Lightbox photos={photos} at={open} label={p.name} onClose={() => setOpen(null)} onMove={(d) => setOpen((o) => (o === null ? o : (o + d + photos.length) % photos.length))} />
         ) : null}
       </AnimatePresence>
     </main>

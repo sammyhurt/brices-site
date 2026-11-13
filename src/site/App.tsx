@@ -1,3 +1,4 @@
+import { LayoutProvider } from "./edit";
 import { lazy, Suspense, useEffect } from "react";
 
 import { partnerships } from "./data";
@@ -71,10 +72,12 @@ export default function App() {
   else page = <NotFound />;
   const overHero = path === "/" || !!m;
   return (
-    <div className="bg-background text-foreground flex min-h-dvh flex-col">
-      <Header overHero={overHero} />
-      <div className="flex-1">{page}</div>
-      <Footer />
-    </div>
+    <LayoutProvider>
+      <div className="bg-background text-foreground flex min-h-dvh flex-col">
+        <Header overHero={overHero} />
+        <div className="flex-1">{page}</div>
+        <Footer />
+      </div>
+    </LayoutProvider>
   );
 }
