@@ -422,8 +422,8 @@ function Inquire() {
   return (
     <section id="inquire" className="bg-secondary scroll-mt-16">
       <div className="grid lg:grid-cols-12">
-        <div className="relative h-80 sm:h-[28rem] lg:order-2 lg:col-span-5 lg:h-auto">
-          <img src={media("closing-doorway")} alt="Meredith and Bernie in front of an old wooden doorway, both dressed in white" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+        <div className="relative h-[30rem] sm:h-[36rem] lg:order-2 lg:col-span-5 lg:h-auto">
+          <img src={media("closing-doorway")} alt="Meredith and Bernie in front of an old wooden doorway, both dressed in white" loading="lazy" className="absolute inset-0 h-full w-full object-cover object-[50%_44%]" />
         </div>
         <div className="px-5 py-20 sm:px-8 lg:col-span-7 lg:px-16 lg:py-28">
           <Reveal>
