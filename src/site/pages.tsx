@@ -329,11 +329,20 @@ function Couples() {
 
 /* ───────── Ideas to film (slide 16) ───────── */
 function Ideas() {
-  // Just the beach photo. It is shown at a modest width because the file from the media kit is small (542 px wide).
+  // Just the beach photo, as wide as the rest of the page's content: the whole photo on phones, a wide cut on larger screens.
   return (
-    <Section className="bg-secondary">
-      <Reveal className="mx-auto w-full max-w-3xl">
-        <img src={media("ideas-beach")} alt="A beach with rows of umbrellas from above" loading="lazy" width={542} height={360} className="aspect-[3/2] w-full rounded-sm object-cover" />
+    <Section className="bg-secondary py-14 lg:py-24">
+      <Reveal className={wrap}>
+        <img
+          src={media("ideas-beach")}
+          srcSet="/media/ideas-beach-sm.jpg 1000w, /media/ideas-beach.jpg 2000w"
+          sizes="(min-width: 1376px) 1280px, 94vw"
+          alt="A beach cove from above: rows of straw umbrellas along clear blue water"
+          loading="lazy"
+          width={2000}
+          height={1326}
+          className="aspect-[3/2] w-full rounded-sm object-cover object-[50%_62%] sm:aspect-[16/9]"
+        />
       </Reveal>
     </Section>
   );
