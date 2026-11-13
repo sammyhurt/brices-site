@@ -178,3 +178,10 @@ html.editing [data-ed="item"]:not([data-type="section"]), html.editing img[data-
 html.editing:not(.dragging) [data-ed="item"]:not([data-type="section"]):hover,
 html.editing:not(.dragging) img[data-ed="pic"]:hover { outline: 2px dashed rgb(14 165 233 / 0.9); outline-offset: 2px; }
 html.editing.dragging, html.editing.dragging * { cursor: grabbing !important; }
+
+/* Looks set in edit mode. A free-moved thing keeps its normal spot in the layout and is shifted from there,
+   separately for desktop, tablet and phone, so moving it on a laptop never disturbs the phone page. */
+[data-free] { z-index: 5; transform: translate(var(--fx-d, 0px), var(--fy-d, 0px)) scale(var(--fs-d, 1)); }
+@media (max-width: 1023px) { [data-free] { transform: translate(var(--fx-t, 0px), var(--fy-t, 0px)) scale(var(--fs-t, 1)); } }
+@media (max-width: 639px) { [data-free] { transform: translate(var(--fx-p, 0px), var(--fy-p, 0px)) scale(var(--fs-p, 1)); } }
+[data-fill] > section, [data-fill] > div > section { background: var(--fill) !important; }

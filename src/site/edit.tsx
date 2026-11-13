@@ -26,7 +26,55 @@ export interface Layout {
   swap?: Record<string, string>; // photo spot -> photo name shown there instead
   size?: Record<string, string>; // list or photo -> "s" | "m" | "l"
   moved?: Record<string, string[]>; // list -> ids dragged out of it into another list
+  style?: Record<string, Sty>; // "p|<photo spot>" or "i|<list>|<id>" -> look and free position
 }
+/** A free position for one screen size: how far it is moved from its normal spot, and how much it is scaled. */
+export interface Free {
+  x: number;
+  y: number;
+  s?: number;
+}
+/** The look of one photo, video or section. Everything is optional; nothing set means "as designed". */
+export interface Sty {
+  bri?: number; // exposure, 100 = unchanged
+  con?: number; // contrast
+  sat?: number; // saturation
+  blur?: number; // layer blur, px
+  bg?: number; // background blur, px (shows through see-through things)
+  op?: number; // opacity, 100 = solid
+  blend?: string; // blend mode
+  mask?: "round" | "circle" | "arch";
+  ar?: string; // frame shape, e.g. "1 / 1"
+  shadow?: "s" | "m" | "l";
+  inner?: "s" | "m" | "l";
+  fill?: string; // a color or gradient behind a section
+  free?: { d?: Free; t?: Free; p?: Free }; // free position on desktop, tablet, phone
+}
+const SHADOW = { s: "0 6px 16px -6px rgb(0 0 0 / 0.35)", m: "0 18px 40px -14px rgb(0 0 0 / 0.5)", l: "0 34px 70px -18px rgb(0 0 0 / 0.65)" };
+export const INNER = { s: "inset 0 0 18px rgb(0 0 0 / 0.3)", m: "inset 0 0 40px rgb(0 0 0 / 0.45)", l: "inset 0 0 80px rgb(0 0 0 / 0.6)" };
+/** Turn a saved look into styles. Free positions go into variables that global.css applies per screen size. */
+export function look(s?: Sty): CSSProperties | undefined {
+  if (!s) return undefined;
+  const o: Record<string, string | number> = {};
+  const f = [s.bri != null && s.bri !== 100 && `brightness(${s.bri}%)`, s.con != null && s.con !== 100 && `contrast(${s.con}%)`, s.sat != null && s.sat !== 100 && `saturate(${s.sat}%)`, s.blur && `blur(${s.blur}px)`].filter(Boolean);
+  if (f.length) o.filter = f.join(" ");
+  if (s.bg) o.backdropFilter = o.WebkitBackdropFilter = `blur(${s.bg}px)`;
+  if (s.op != null && s.op !== 100) o.opacity = s.op / 100;
+  if (s.blend) o.mixBlendMode = s.blend;
+  if (s.mask) o.borderRadius = s.mask === "round" ? "1.5rem" : s.mask === "circle" ? "9999px" : "9999px 9999px 0 0";
+  if (s.ar || s.mask === "circle") o.aspectRatio = s.ar || "1 / 1";
+  if (s.shadow) o.boxShadow = SHADOW[s.shadow];
+  if (s.fill) o["--fill"] = s.fill;
+  for (const d of ["d", "t", "p"] as const) {
+    const fr = s.free?.[d];
+    if (!fr) continue;
+    o[`--fx-${d}`] = `${fr.x}px`;
+    o[`--fy-${d}`] = `${fr.y}px`;
+    o[`--fs-${d}`] = fr.s ?? 1;
+  }
+  return o as CSSProperties;
+}
+const isFree = (s?: Sty) => (s?.free && (s.free.d || s.free.t || s.free.p) ? "" : undefined);
 /** How an item can be resized: where the size is stored, its value now, and the choices from small to large. */
 export interface SizeSpec {
   k: string;
@@ -86,8 +134,12 @@ interface Ctx {
   pick(p: Picker): void;
   /** The ids each list is showing right now, in order (filled in by the items as they render). */
   lists: MutableRefObject<Record<string, string[]>>;
+  /** The address of a photo by name: a site photo, or one uploaded in this browser. */
+  src(name: string): string;
+  addUpload(name: string, url: string): void;
+  uploads: Record<string, string>;
 }
-const LayoutCtx = createContext<Ctx>({ L: BASE, editing: false, changed: false, canUndo: false, setEditing() {}, change() {}, undo() {}, reset() {}, picker: null, pick() {}, lists: { current: {} } });
+const LayoutCtx = createContext<Ctx>({ L: BASE, editing: false, changed: false, canUndo: false, setEditing() {}, change() {}, undo() {}, reset() {}, picker: null, pick() {}, lists: { current: {} }, src: media, addUpload() {}, uploads: {} });
 export const useLayout = () => useContext(LayoutCtx);
 
 const Editor = lazy(() => import("./editor"));
@@ -101,7 +153,25 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
   const lastTag = useRef("");
   const lists = useRef<Record<string, string[]>>({});
   const [, bump] = useState(0);
-  useEffect(() => setAllowed(canEdit()), []);
+  const [uploads, setUploads] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!canEdit()) return;
+    setAllowed(true);
+    if (/[?&]edit=1/.test(location.search)) setEditing(true); // the tablet and phone previews open straight into editing
+    import("./uploads").then((m) => m.loadAll()).then(setUploads);
+    // the tablet and phone previews are the same page in a frame: pick up what was changed there (and the other way)
+    const sync = (e: StorageEvent) => {
+      if (e.key === DRAFT_KEY) setDraft(loadDraft());
+      if (e.key === "mb-uploads-at") import("./uploads").then((m) => m.loadAll()).then(setUploads);
+    };
+    addEventListener("storage", sync);
+    return () => removeEventListener("storage", sync);
+  }, []);
+  const src = useCallback((name: string) => (name.startsWith("up:") ? uploads[name] || "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" : media(name)), [uploads]);
+  const addUpload = useCallback((name: string, url: string) => {
+    setUploads((u) => ({ ...u, [name]: url }));
+    store.set("mb-uploads-at", String(Date.now()));
+  }, []);
 
   const change = useCallback((fn: (l: Layout) => void, tag?: string) => {
     const again = !!tag && tag === lastTag.current;
@@ -132,9 +202,9 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
   }, [draft]);
 
   const value = useMemo<Ctx>(
-    () => ({ L: draft || BASE, editing, changed: !!draft, canUndo: past.current.length > 0, setEditing, change, undo, reset, picker, pick, lists }),
+    () => ({ L: draft || BASE, editing, changed: !!draft, canUndo: past.current.length > 0, setEditing, change, undo, reset, picker, pick, lists, src, addUpload, uploads }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [draft, editing, change, undo, reset, picker, past.current.length],
+    [draft, editing, change, undo, reset, picker, past.current.length, src, addUpload, uploads],
   );
   return (
     <LayoutCtx.Provider value={value}>
@@ -188,17 +258,18 @@ export function useSize(k: string, fallback: "s" | "m" | "l" = "m"): "s" | "m" |
  * In edit mode it can be selected, reframed, swapped, and other photos can be dropped onto it.
  */
 export function Pic({ slot, name, focus, size, className, style, ...rest }: { slot: string; name: string; focus?: string; size?: SizeSpec } & Omit<ImgHTMLAttributes<HTMLImageElement>, "src" | "slot">) {
-  const { L, editing } = useLayout();
+  const { L, editing, src } = useLayout();
   const shown = L.swap?.[slot] || name;
   const pos = L.focus?.[slot] || focus;
-  const s: CSSProperties = { ...style, ...(pos ? { objectPosition: pos } : null) };
+  const sty = L.style?.["p|" + slot];
+  const s: CSSProperties = { ...style, ...(pos ? { objectPosition: pos } : null), ...look(sty) };
   if (shown !== name) {
     // a swapped photo has no smaller copies prepared for it
     delete (rest as ImgHTMLAttributes<HTMLImageElement>).srcSet;
     delete (rest as ImgHTMLAttributes<HTMLImageElement>).sizes;
   }
-  if (!editing) return <img src={media(shown)} className={className} style={s} {...rest} />;
-  return <img src={media(shown)} {...rest} className={className} style={s} draggable={false} data-ed="pic" data-slot={slot} data-name={shown} data-size={size ? JSON.stringify(size) : undefined} />;
+  if (!editing) return <img src={src(shown)} className={className} style={s} data-free={isFree(sty)} {...rest} />;
+  return <img src={src(shown)} {...rest} className={className} style={s} data-free={isFree(sty)} draggable={false} data-ed="pic" data-slot={slot} data-name={shown} data-size={size ? JSON.stringify(size) : undefined} />;
 }
 
 /**
@@ -207,12 +278,22 @@ export function Pic({ slot, name, focus, size, className, style, ...rest }: { sl
  * `flow` says which way its list runs: "x" side by side, "y" stacked.
  */
 export function Item({ k, id, ids, type = "photo", flow = "x", label, size, group, className, children }: { k: string; id: string; ids: string[]; type?: "photo" | "clip" | "section"; flow?: "x" | "y"; label?: string; size?: SizeSpec; group?: SizeSpec; className?: string; children: ReactNode }) {
-  const { editing, lists } = useLayout();
-  if (!editing) return <div className={cn("relative", className)}>{children}</div>;
+  const { L, editing, lists } = useLayout();
+  const sty = L.style?.[`i|${k}|${id}`];
+  const st = look(sty);
+  const veil = sty?.inner ? <div aria-hidden className="pointer-events-none absolute inset-0 z-[1]" style={{ boxShadow: INNER[sty.inner], borderRadius: "inherit" }} /> : null;
+  if (!editing)
+    return (
+      <div className={cn("relative", className)} style={st} data-free={isFree(sty)} data-fill={sty?.fill ? "" : undefined}>
+        {children}
+        {veil}
+      </div>
+    );
   lists.current[k] = ids;
   return (
-    <div className={cn("relative", className)} data-ed="item" data-k={k} data-id={id} data-type={type} data-flow={flow} data-label={label} data-size={size ? JSON.stringify(size) : undefined} data-group={group ? JSON.stringify(group) : undefined}>
+    <div className={cn("relative", className)} style={st} data-free={isFree(sty)} data-fill={sty?.fill ? "" : undefined} data-ed="item" data-k={k} data-id={id} data-type={type} data-flow={flow} data-label={label} data-size={size ? JSON.stringify(size) : undefined} data-group={group ? JSON.stringify(group) : undefined}>
       {children}
+      {veil}
     </div>
   );
 }
